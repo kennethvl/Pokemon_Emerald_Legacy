@@ -381,7 +381,9 @@
 #define STRINGID_ATTACKBOOSTEDBYABILITY     381 // Added new Ability Effect to provide text for Overgrow, Blaze, Torrent and Swarm
 #define STRINGID_MAGMAARMORACTIVATED        382  // Added new Battle result message to provide text for Magma Armor activation
 
-#define BATTLESTRINGS_COUNT                 383
+#define STRINGID_PARTYGAINEDEXP             383 // One message for the whole non-participating party
+
+#define BATTLESTRINGS_COUNT                 384
 
 // This is the string id that gBattleStringsTable starts with.
 // String ids before this (e.g. STRINGID_INTROMSG) are not in the table,

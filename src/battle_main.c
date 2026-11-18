@@ -241,6 +241,7 @@ void (*gPreBattleCallback1)(void);
 void (*gBattleMainFunc)(void);
 struct BattleResults gBattleResults;
 u8 gLeveledUpInBattle;
+u8 gLevelBeforeBattleLevelUp[PARTY_SIZE]; // level a mon had before its first level-up of this battle
 void (*gBattlerControllerFuncs[MAX_BATTLERS_COUNT])(void);
 u8 gHealthboxSpriteIds[MAX_BATTLERS_COUNT];
 u8 gMultiUsePlayerCursor;
@@ -5215,6 +5216,8 @@ static void TryEvolvePokemon(void)
                 species = GetEvolutionTargetSpecies(&gPlayerParty[i], EVO_MODE_NORMAL, levelUpBits);
                 if (species != SPECIES_NONE)
                 {
+                    // One evolution per battle; the new form is offered the moves of every level gained.
+                    SetEvolutionMoveFromLevel(gLevelBeforeBattleLevelUp[i]);
                     FreeAllWindowBuffers();
                     gBattleMainFunc = WaitForEvoSceneToFinish;
                     EvolutionScene(&gPlayerParty[i], species, TRUE, i);

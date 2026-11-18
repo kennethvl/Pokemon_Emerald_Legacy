@@ -44,6 +44,7 @@
 #include "party_menu.h"
 #include "player_pc.h"
 #include "pokemon.h"
+#include "level_up_logic.h"
 #include "pokemon_icon.h"
 #include "pokemon_jump.h"
 #include "pokemon_storage_system.h"
@@ -4978,14 +4979,23 @@ void ItemUseCB_RareCandy(u8 taskId, TaskFunc task)
     s16 *arrayPtr = ptr->data;
     u16 *itemPtr = &gSpecialVar_ItemId;
     bool8 cannotUseEffect;
+    bool8 evolveOnly = FALSE;
+    u8 level = GetMonData(mon, MON_DATA_LEVEL);
+    u8 outcome = RareCandyLogic_Outcome(level, MAX_LEVEL, levelCappedNuzlocke(level),
+                                        FlagGet(FLAG_NUZLOCKE) && GetMonData(mon, MON_DATA_DEAD),
+                                        level >= MAX_LEVEL && GetEvolutionTargetSpecies(mon, EVO_MODE_NORMAL, ITEM_NONE) != SPECIES_NONE);
 
-    if ((GetMonData(mon, MON_DATA_LEVEL) != MAX_LEVEL
-    && !levelCappedNuzlocke(GetMonData(mon, MON_DATA_LEVEL)))
-    && !(FlagGet(FLAG_NUZLOCKE) && GetMonData(mon, MON_DATA_DEAD)))
+    if (outcome == RARE_CANDY_LEVEL_UP)
     {
         BufferMonStatsToTaskData(mon, arrayPtr);
         cannotUseEffect = ExecuteTableBasedItemEffect_(gPartyMenu.slotId, *itemPtr, 0);
         BufferMonStatsToTaskData(mon, &ptr->data[NUM_STATS]);
+    }
+    else if (outcome == RARE_CANDY_EVOLVE_ONLY)
+    {
+        // At max level the candy cannot raise the level, but it still triggers an eligible evolution.
+        cannotUseEffect = FALSE;
+        evolveOnly = TRUE;
     }
     else
     {
@@ -4998,6 +5008,14 @@ void ItemUseCB_RareCandy(u8 taskId, TaskFunc task)
         DisplayPartyMenuMessage(gText_WontHaveEffect, TRUE);
         ScheduleBgCopyTilemapToVram(2);
         gTasks[taskId].func = task;
+    }
+    else if (evolveOnly)
+    {
+        gPartyMenuUseExitCallback = TRUE;
+        RemoveBagItem(gSpecialVar_ItemId, 1);
+        // No level was gained, so the evolved form is offered no extra moves.
+        SetEvolutionMoveFromLevel(level);
+        PartyMenuTryEvolution(taskId);
     }
     else
     {

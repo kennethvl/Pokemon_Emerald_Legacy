@@ -22,6 +22,7 @@
 #include "pokedex.h"
 #include "pokeblock.h"
 #include "pokemon.h"
+#include "level_up_logic.h"
 #include "pokemon_animation.h"
 #include "pokemon_summary_screen.h"
 #include "pokemon_storage_system.h"
@@ -73,7 +74,7 @@ static u16 GiveMoveToBoxMon(struct BoxPokemon *boxMon, u16 move);
 static bool8 ShouldSkipFriendshipChange(void);
 static u8 CopyMonToPC(struct Pokemon *mon);
 
-EWRAM_DATA static u8 sLearningMoveTableID = 0;
+EWRAM_DATA static struct LevelMoveCursor sLearningMoveCursor = {0};
 EWRAM_DATA u8 gPlayerPartyCount = 0;
 EWRAM_DATA u8 gEnemyPartyCount = 0;
 EWRAM_DATA struct Pokemon gPlayerParty[PARTY_SIZE] = {0};
@@ -3068,36 +3069,38 @@ void GiveBoxMonInitialMoveset(struct BoxPokemon *boxMon)
     }
 }
 
-u16 MonTryLearningNewMove(struct Pokemon *mon, bool8 firstMove)
+STATIC_ASSERT(LEVELLOGIC_MOVE_ID == LEVEL_UP_MOVE_ID, LevelLogicMoveIdMismatch)
+STATIC_ASSERT(LEVELLOGIC_MOVE_LV == LEVEL_UP_MOVE_LV, LevelLogicMoveLvMismatch)
+STATIC_ASSERT(LEVELLOGIC_END == LEVEL_UP_END, LevelLogicEndMismatch)
+
+// Offers the moves the mon learns in the level range (fromLevel, toLevel], in level order.
+// firstMove starts a new walk; later calls continue it, so moves the player declined or the mon
+// already knows are not offered again.
+u16 MonTryLearningNewMoveInRange(struct Pokemon *mon, u8 fromLevel, u8 toLevel, bool8 firstMove)
 {
     u32 retVal = MOVE_NONE;
     u16 species = GetMonData(mon, MON_DATA_SPECIES, NULL);
-    u8 level = GetMonData(mon, MON_DATA_LEVEL, NULL);
+    u16 move;
 
-    // since you can learn more than one move per level
-    // the game needs to know whether you decided to
-    // learn it or keep the old set to avoid asking
-    // you to learn the same move over and over again
     if (firstMove)
-    {
-        sLearningMoveTableID = 0;
+        LevelMoveCursor_Init(&sLearningMoveCursor, fromLevel, toLevel);
 
-        while ((gLevelUpLearnsets[species][sLearningMoveTableID] & LEVEL_UP_MOVE_LV) != (level << 9))
-        {
-            sLearningMoveTableID++;
-            if (gLevelUpLearnsets[species][sLearningMoveTableID] == LEVEL_UP_END)
-                return MOVE_NONE;
-        }
-    }
-
-    if ((gLevelUpLearnsets[species][sLearningMoveTableID] & LEVEL_UP_MOVE_LV) == (level << 9))
+    move = LevelMoveCursor_Next(&sLearningMoveCursor, gLevelUpLearnsets[species]);
+    if (move != MOVE_NONE)
     {
-        gMoveToLearn = (gLevelUpLearnsets[species][sLearningMoveTableID] & LEVEL_UP_MOVE_ID);
-        sLearningMoveTableID++;
+        gMoveToLearn = move;
         retVal = GiveMoveToMon(mon, gMoveToLearn);
     }
 
     return retVal;
+}
+
+// Moves learned at the mon's current level only.
+u16 MonTryLearningNewMove(struct Pokemon *mon, bool8 firstMove)
+{
+    u8 level = GetMonData(mon, MON_DATA_LEVEL, NULL);
+
+    return MonTryLearningNewMoveInRange(mon, level - 1, level, firstMove);
 }
 
 void DeleteFirstMoveAndGiveMoveToMon(struct Pokemon *mon, u16 move)
@@ -5591,34 +5594,34 @@ u16 GetEvolutionTargetSpecies(struct Pokemon *mon, u8 mode, u16 evolutionItem)
                     targetSpecies = gEvolutionTable[species][i].targetSpecies;
                 break;
             case EVO_LEVEL:
-                if (gEvolutionTable[species][i].param <= level)
+                if (EvoLogic_LevelReached(gEvolutionTable[species][i].param, level))
                     targetSpecies = gEvolutionTable[species][i].targetSpecies;
                 break;
             case EVO_LEVEL_ATK_GT_DEF:
-                if (gEvolutionTable[species][i].param <= level)
+                if (EvoLogic_LevelReached(gEvolutionTable[species][i].param, level))
                     if (GetMonData(mon, MON_DATA_ATK, 0) > GetMonData(mon, MON_DATA_DEF, 0))
                         targetSpecies = gEvolutionTable[species][i].targetSpecies;
                 break;
             case EVO_LEVEL_ATK_EQ_DEF:
-                if (gEvolutionTable[species][i].param <= level)
+                if (EvoLogic_LevelReached(gEvolutionTable[species][i].param, level))
                     if (GetMonData(mon, MON_DATA_ATK, 0) == GetMonData(mon, MON_DATA_DEF, 0))
                         targetSpecies = gEvolutionTable[species][i].targetSpecies;
                 break;
             case EVO_LEVEL_ATK_LT_DEF:
-                if (gEvolutionTable[species][i].param <= level)
+                if (EvoLogic_LevelReached(gEvolutionTable[species][i].param, level))
                     if (GetMonData(mon, MON_DATA_ATK, 0) < GetMonData(mon, MON_DATA_DEF, 0))
                         targetSpecies = gEvolutionTable[species][i].targetSpecies;
                 break;
             case EVO_LEVEL_SILCOON:
-                if (gEvolutionTable[species][i].param <= level && (upperPersonality % 10) <= 4)
+                if (EvoLogic_LevelReached(gEvolutionTable[species][i].param, level) && (upperPersonality % 10) <= 4)
                     targetSpecies = gEvolutionTable[species][i].targetSpecies;
                 break;
             case EVO_LEVEL_CASCOON:
-                if (gEvolutionTable[species][i].param <= level && (upperPersonality % 10) > 4)
+                if (EvoLogic_LevelReached(gEvolutionTable[species][i].param, level) && (upperPersonality % 10) > 4)
                     targetSpecies = gEvolutionTable[species][i].targetSpecies;
                 break;
             case EVO_LEVEL_NINJASK:
-                if (gEvolutionTable[species][i].param <= level)
+                if (EvoLogic_LevelReached(gEvolutionTable[species][i].param, level))
                     targetSpecies = gEvolutionTable[species][i].targetSpecies;
                 break;
             case EVO_BEAUTY:

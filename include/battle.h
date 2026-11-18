@@ -357,6 +357,10 @@ struct BattleStruct
     u8 wrappedMove[MAX_BATTLERS_COUNT * 2]; // Leftover from Ruby's ewram access.
     u8 moveTarget[MAX_BATTLERS_COUNT];
     u8 expGetterMonId;
+    u8 expStartLevel;        // level of expGetterMonId before the current EXP award
+    u8 expPass;              // 0: Pokemon that took part in the battle, 1: the rest of the party
+    u8 expLevelUpPending;    // a level was gained and its summary has not been shown yet
+    u8 partyExpMessageShown; // the one-per-KO message for the non-participating party was printed
     u8 unused_1;
     u8 wildVictorySong;
     u8 dynamicMoveType;
@@ -722,6 +726,7 @@ extern void (*gPreBattleCallback1)(void);
 extern void (*gBattleMainFunc)(void);
 extern struct BattleResults gBattleResults;
 extern u8 gLeveledUpInBattle;
+extern u8 gLevelBeforeBattleLevelUp[PARTY_SIZE];
 extern void (*gBattlerControllerFuncs[MAX_BATTLERS_COUNT])(void);
 extern u8 gHealthboxSpriteIds[MAX_BATTLERS_COUNT];
 extern u8 gMultiUsePlayerCursor;

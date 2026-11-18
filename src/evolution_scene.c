@@ -7,6 +7,7 @@
 #include "decompress.h"
 #include "evolution_scene.h"
 #include "evolution_graphics.h"
+#include "level_up_logic.h"
 #include "gpu_regs.h"
 #include "link.h"
 #include "link_rfu.h"
@@ -49,6 +50,23 @@ static EWRAM_DATA struct EvoInfo *sEvoStructPtr = NULL;
 static EWRAM_DATA u16 *sBgAnimPal = NULL;
 
 void (*gCB2_AfterEvolution)(void);
+
+// Level the evolving mon had before the level-ups that triggered this evolution. After evolving,
+// the new form is offered every move it learns in (start level, current level], so moves skipped
+// by a multi-level gain are not lost. Reset after each scene so other evolutions are unaffected.
+static u8 sEvoMoveFromLevel = EVOLOGIC_NO_RANGE;
+
+void SetEvolutionMoveFromLevel(u8 level)
+{
+    sEvoMoveFromLevel = level;
+}
+
+static u16 EvoSceneTryLearnMove(struct Pokemon *mon, bool8 firstMove)
+{
+    u8 level = GetMonData(mon, MON_DATA_LEVEL);
+
+    return MonTryLearningNewMoveInRange(mon, EvoLogic_MoveRangeStart(sEvoMoveFromLevel, level), level, firstMove);
+}
 
 #define sEvoCursorPos           gBattleCommunication[1] // when learning a new move
 #define sEvoGraphicsTaskId      gBattleCommunication[2]
@@ -772,7 +790,7 @@ static void Task_EvolutionScene(u8 taskId)
     case EVOSTATE_TRY_LEARN_MOVE:
         if (!IsTextPrinterActive(0))
         {
-            var = MonTryLearningNewMove(mon, gTasks[taskId].tLearnsFirstMove);
+            var = EvoSceneTryLearnMove(mon, gTasks[taskId].tLearnsFirstMove);
             if (var != MOVE_NONE && !gTasks[taskId].tEvoWasStopped)
             {
                 u8 nickname[POKEMON_NAME_BUFFER_SIZE];
@@ -817,6 +835,7 @@ static void Task_EvolutionScene(u8 taskId)
             FreeMonSpritesGfx();
             FREE_AND_SET_NULL(sEvoStructPtr);
             FreeAllWindowBuffers();
+            sEvoMoveFromLevel = EVOLOGIC_NO_RANGE;
             SetMainCallback2(gCB2_AfterEvolution);
         }
         break;
@@ -1181,7 +1200,7 @@ static void Task_TradeEvolutionScene(u8 taskId)
     case T_EVOSTATE_TRY_LEARN_MOVE:
         if (!IsTextPrinterActive(0) && IsFanfareTaskInactive() == TRUE)
         {
-            var = MonTryLearningNewMove(mon, gTasks[taskId].tLearnsFirstMove);
+            var = EvoSceneTryLearnMove(mon, gTasks[taskId].tLearnsFirstMove);
             if (var != MOVE_NONE && !gTasks[taskId].tEvoWasStopped)
             {
                 u8 nickname[POKEMON_NAME_BUFFER_SIZE];
@@ -1212,6 +1231,7 @@ static void Task_TradeEvolutionScene(u8 taskId)
             DestroyTask(taskId);
             FREE_AND_SET_NULL(sEvoStructPtr);
             gTextFlags.useAlternateDownArrow = FALSE;
+            sEvoMoveFromLevel = EVOLOGIC_NO_RANGE;
             SetMainCallback2(gCB2_AfterEvolution);
         }
         break;
