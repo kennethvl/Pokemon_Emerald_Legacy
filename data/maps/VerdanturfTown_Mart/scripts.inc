@@ -39,6 +39,7 @@ VerdanturfTown_Mart_Pokemart:
 	.2byte ITEM_SUPER_REPEL
 	.2byte ITEM_X_SPECIAL
 	.2byte ITEM_FLUFFY_TAIL
+	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
 	end
@@ -57,6 +58,7 @@ VerdanturfTown_Mart_Pokemart_PostGame:
 	.2byte ITEM_X_SPECIAL
 	.2byte ITEM_FLUFFY_TAIL
 	.2byte ITEM_MIRACLE_SEED
+	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
 	end

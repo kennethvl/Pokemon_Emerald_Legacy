@@ -39,6 +39,7 @@ MauvilleCity_Mart_Pokemart:
 	.2byte ITEM_GUARD_SPEC
 	.2byte ITEM_DIRE_HIT
 	.2byte ITEM_X_ACCURACY
+	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
 	end
@@ -57,6 +58,7 @@ MauvilleCity_Mart_Pokemart_PostGame:
 	.2byte ITEM_DIRE_HIT
 	.2byte ITEM_X_ACCURACY
 	.2byte ITEM_MAGNET
+	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
 	end

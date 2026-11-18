@@ -44,6 +44,7 @@ RustboroCity_Mart_Pokemart_Basic:
 	.2byte ITEM_X_SPEED
 	.2byte ITEM_X_ATTACK
 	.2byte ITEM_X_DEFEND
+	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
 	end
@@ -68,6 +69,7 @@ RustboroCity_Mart_Pokemart_Expanded:
 	.2byte ITEM_X_SPEED
 	.2byte ITEM_X_ATTACK
 	.2byte ITEM_X_DEFEND
+	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
 	end
@@ -87,6 +89,7 @@ RustboroCity_Mart_Pokemart_PostGame:
 	.2byte ITEM_X_ATTACK
 	.2byte ITEM_X_DEFEND
 	.2byte ITEM_HARD_STONE
+	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
 	end

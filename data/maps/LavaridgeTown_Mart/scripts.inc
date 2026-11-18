@@ -36,6 +36,7 @@ LavaridgeTown_Mart_Pokemart:
 	.2byte ITEM_BURN_HEAL
 	.2byte ITEM_REVIVE
 	.2byte ITEM_SUPER_REPEL
+	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
 	end
@@ -52,6 +53,7 @@ LavaridgeTown_Mart_Pokemart_PostGame:
 	.2byte ITEM_SUPER_REPEL
 	.2byte ITEM_CHARCOAL
 	.2byte ITEM_SOFT_SAND
+	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
 	end

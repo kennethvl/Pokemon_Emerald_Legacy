@@ -39,6 +39,7 @@ SlateportCity_Mart_Pokemart:
 	.2byte ITEM_REPEL
 	.2byte ITEM_SUPER_REPEL
 	.2byte ITEM_HARBOR_MAIL
+	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
 	end
@@ -57,6 +58,7 @@ SlateportCity_Mart_Pokemart_PostGame:
 	.2byte ITEM_SUPER_REPEL
 	.2byte ITEM_HARBOR_MAIL
 	.2byte ITEM_BLACK_BELT
+	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
 	end
