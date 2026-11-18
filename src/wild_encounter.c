@@ -545,6 +545,14 @@ static u8 PickWildMonNature(void)
     struct Pokeblock *safariPokeblock;
     u8 natures[NUM_NATURES];
 
+    // Synchronize: a lead Pokémon with this ability always passes on its nature (checked first,
+    // so it also takes priority over the Safari Zone Pokéblock influence).
+    if (!GetMonData(&gPlayerParty[0], MON_DATA_SANITY_IS_EGG)
+        && GetMonAbility(&gPlayerParty[0]) == ABILITY_SYNCHRONIZE)
+    {
+        return GetMonData(&gPlayerParty[0], MON_DATA_PERSONALITY) % NUM_NATURES;
+    }
+
     if (GetSafariZoneFlag() == TRUE && Random() % 100 < 80)
     {
         safariPokeblock = SafariZoneGetActivePokeblock();
@@ -570,14 +578,6 @@ static u8 PickWildMonNature(void)
             }
         }
     }
-    // check synchronize for a Pokémon with the same ability
-    if (!GetMonData(&gPlayerParty[0], MON_DATA_SANITY_IS_EGG)
-        && GetMonAbility(&gPlayerParty[0]) == ABILITY_SYNCHRONIZE
-        && Random() % 2 == 0)
-    {
-        return GetMonData(&gPlayerParty[0], MON_DATA_PERSONALITY) % NUM_NATURES;
-    }
-
     // random nature
     return Random() % NUM_NATURES;
 }
