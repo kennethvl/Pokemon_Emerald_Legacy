@@ -387,8 +387,48 @@ static void npc_clear_strange_bits(struct ObjectEvent *objEvent)
     gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_DASH;
 }
 
+// Walking into water starts Surf (Badge 5) and walking north into a waterfall while surfing climbs it
+// (Badge 8), both without needing a Pokémon that knows the move. Returns TRUE if a field effect was started.
+static bool8 TryStartFieldMoveByWalking(u8 direction)
+{
+    struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];
+    s16 x, y;
+
+    // Let the player turn toward the water / waterfall first, as usual.
+    if (direction == DIR_NONE || playerObjEvent->facingDirection != direction)
+        return FALSE;
+    if (gPlayerAvatar.preventStep || (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_FORCED_MOVE))
+        return FALSE;
+
+    x = playerObjEvent->currentCoords.x;
+    y = playerObjEvent->currentCoords.y;
+    MoveCoords(direction, &x, &y);
+
+    if (!(gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_SURFING | PLAYER_AVATAR_FLAG_UNDERWATER)))
+    {
+        if (FlagGet(FLAG_BADGE05_GET) && !FieldEffectActiveListContains(FLDEFF_USE_SURF) && IsPlayerFacingSurfableFishableWater())
+        {
+            StartSurfWithoutMon();
+            return TRUE;
+        }
+    }
+    else if ((gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING) && direction == DIR_NORTH)
+    {
+        if (FlagGet(FLAG_BADGE08_GET) && MetatileBehavior_IsWaterfall(MapGridGetMetatileBehaviorAt(x, y))
+         && !FieldEffectActiveListContains(FLDEFF_USE_WATERFALL))
+        {
+            StartWaterfallWithoutMon();
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 static void MovePlayerAvatarUsingKeypadInput(u8 direction, u16 newKeys, u16 heldKeys)
 {
+    if (TryStartFieldMoveByWalking(direction))
+        return;
+
     if (gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))
         MovePlayerOnBike(direction, newKeys, heldKeys);
     else

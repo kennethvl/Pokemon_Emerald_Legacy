@@ -1830,6 +1830,36 @@ static bool8 EscalatorWarpIn_End(struct Task *task)
 
 #undef tState
 
+// When set, the next Surf / Waterfall / Dive field effect skips the "Pokémon shows up" part, so it works without
+// a Pokémon that knows the move (see StartSurfWithoutMon and friends). Consumed by the effect that starts next.
+static bool8 sFieldMoveWithoutMon = FALSE;
+
+void StartSurfWithoutMon(void)
+{
+    sFieldMoveWithoutMon = TRUE;
+    FieldEffectStart(FLDEFF_USE_SURF);
+}
+
+void StartWaterfallWithoutMon(void)
+{
+    sFieldMoveWithoutMon = TRUE;
+    FieldEffectStart(FLDEFF_USE_WATERFALL);
+}
+
+void StartDiveWithoutMon(void)
+{
+    sFieldMoveWithoutMon = TRUE;
+    FieldEffectStart(FLDEFF_USE_DIVE);
+}
+
+static bool8 ConsumeFieldMoveWithoutMon(void)
+{
+    bool8 result = sFieldMoveWithoutMon;
+
+    sFieldMoveWithoutMon = FALSE;
+    return result;
+}
+
 #define tState data[0]
 #define tMonId data[1]
 
@@ -1838,6 +1868,7 @@ bool8 FldEff_UseWaterfall(void)
     u8 taskId;
     taskId = CreateTask(Task_UseWaterfall, 0xff);
     gTasks[taskId].tMonId = gFieldEffectArguments[0];
+    gTasks[taskId].data[2] = ConsumeFieldMoveWithoutMon(); // skip the "Pokémon shows up" step
     Task_UseWaterfall(taskId);
     return FALSE;
 }
@@ -1851,7 +1882,7 @@ static bool8 WaterfallFieldEffect_Init(struct Task *task, struct ObjectEvent *ob
 {
     LockPlayerFieldControls();
     gPlayerAvatar.preventStep = TRUE;
-    task->tState++;
+    task->tState = task->data[2] ? 3 : 1; // 3 = RideUp
     return FALSE;
 }
 
@@ -1913,6 +1944,7 @@ bool8 FldEff_UseDive(void)
     taskId = CreateTask(Task_UseDive, 0xff);
     gTasks[taskId].data[15] = gFieldEffectArguments[0];
     gTasks[taskId].data[14] = gFieldEffectArguments[1];
+    gTasks[taskId].data[13] = ConsumeFieldMoveWithoutMon(); // skip the "Pokémon shows up" step
     Task_UseDive(taskId);
     return FALSE;
 }
@@ -1925,7 +1957,15 @@ void Task_UseDive(u8 taskId)
 static bool8 DiveFieldEffect_Init(struct Task *task)
 {
     gPlayerAvatar.preventStep = TRUE;
-    task->data[0]++;
+    if (task->data[13])
+    {
+        LockPlayerFieldControls();
+        task->data[0] = 2; // straight to TryWarp
+    }
+    else
+    {
+        task->data[0]++;
+    }
     return FALSE;
 }
 
@@ -2985,11 +3025,13 @@ static void SpriteCB_FieldMoveMonSlideOffscreen(struct Sprite *sprite)
 #define tDestX data[1]
 #define tDestY data[2]
 #define tMonId data[15]
+#define tSkipMon data[14]
 
 u8 FldEff_UseSurf(void)
 {
     u8 taskId = CreateTask(Task_SurfFieldEffect, 0xff);
     gTasks[taskId].tMonId = gFieldEffectArguments[0];
+    gTasks[taskId].tSkipMon = ConsumeFieldMoveWithoutMon();
     Overworld_ClearSavedMusic();
     Overworld_ChangeMusicTo(MUS_SURF);
     return FALSE;
@@ -3016,7 +3058,8 @@ static void SurfFieldEffect_Init(struct Task *task)
     SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_SURFING);
     PlayerGetDestCoords(&task->tDestX, &task->tDestY);
     MoveCoords(gObjectEvents[gPlayerAvatar.objectEventId].movementDirection, &task->tDestX, &task->tDestY);
-    task->tState++;
+    // Without a Pokémon (walking into water) skip the pose and the "Pokémon shows up" step.
+    task->tState = task->tSkipMon ? 3 : 1;
 }
 
 static void SurfFieldEffect_FieldMovePose(struct Task *task)
@@ -3081,6 +3124,7 @@ static void SurfFieldEffect_End(struct Task *task)
 #undef tDestX
 #undef tDestY
 #undef tMonId
+#undef tSkipMon
 
 u8 FldEff_RayquazaSpotlight(void)
 {

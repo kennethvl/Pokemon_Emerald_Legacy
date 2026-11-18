@@ -10,6 +10,10 @@ extern void (*gPostMenuFieldCallback)(void);
 extern bool8 (*gFieldCallback2)(void);
 
 u32 FieldEffectStart(u8);
+// Field moves that work without a Pokémon that knows the move (the Pokémon "shows up" step is skipped).
+void StartSurfWithoutMon(void);
+void StartWaterfallWithoutMon(void);
+void StartDiveWithoutMon(void);
 bool8 FieldEffectActiveListContains(u8 id);
 void FieldEffectActiveListClear(void);
 void ReturnToFieldFromFlyMapSelect(void);
