@@ -79,13 +79,8 @@ bool8 SafariZoneTakeStep(void)
         return FALSE;
     }
 
+    // No step limit: the Safari Zone never ends because of steps taken.
     DecrementFeederStepCounters();
-    sSafariZoneStepCounter--;
-    if (sSafariZoneStepCounter == 0)
-    {
-        ScriptContext_SetupScript(SafariZone_EventScript_TimesUp);
-        return TRUE;
-    }
     return FALSE;
 }
 
