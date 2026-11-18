@@ -124,6 +124,7 @@
 #define MULTI_TAG_MATCH_TYPE               113
 #define MULTI_FOSSIL_POST_GAME             114
 #define MULTI_PKMN_CENTER_MOM              115
+#define MULTI_MOM_HYPER_TRAINING           116
 
 // Lilycove SS Tidal Multichoice Selections
 #define SSTIDAL_SELECTION_SLATEPORT        0

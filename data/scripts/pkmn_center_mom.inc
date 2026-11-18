@@ -31,8 +31,47 @@ PokemonCenter_EventScript_MomMenu::
 	goto PokemonCenter_EventScript_MomGoodbye
 	end
 
+@ ---- Hyper Training: raise IVs to 31, MOM_SERVICE_PRICE per IV raised ----
 PokemonCenter_EventScript_MomHyperTraining::
-	goto PokemonCenter_EventScript_MomNotReady
+	msgbox PokemonCenter_Text_MomWhichMon, MSGBOX_DEFAULT
+	special ChoosePartyMon
+	waitstate
+	goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, PokemonCenter_EventScript_MomMenu
+	special MomCanModifyPartyMon
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomCantModifyEgg
+PokemonCenter_EventScript_MomHyperTrainingStat::
+	message PokemonCenter_Text_MomWhichStat
+	waitmessage
+	multichoice 0, 0, MULTI_MOM_HYPER_TRAINING, FALSE
+	goto_if_eq VAR_RESULT, MOM_HYPER_CANCEL, PokemonCenter_EventScript_MomMenu
+	goto_if_eq VAR_RESULT, MULTI_B_PRESSED, PokemonCenter_EventScript_MomMenu
+	copyvar VAR_0x8005, VAR_RESULT
+	special MomBufferHyperTraining
+	goto_if_eq VAR_RESULT, 0, PokemonCenter_EventScript_MomHyperAlreadyPerfect
+	msgbox PokemonCenter_Text_MomHyperConfirm, MSGBOX_YESNO
+	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomMenu
+	special MomPayForService
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomNotEnoughMoney
+	special MomApplyHyperTraining
+	playfanfare MUS_LEVEL_UP
+	msgbox PokemonCenter_Text_MomHyperDone, MSGBOX_DEFAULT
+	waitfanfare
+	goto PokemonCenter_EventScript_MomMenu
+	end
+
+PokemonCenter_EventScript_MomHyperAlreadyPerfect::
+	msgbox PokemonCenter_Text_MomHyperAlreadyPerfect, MSGBOX_DEFAULT
+	goto PokemonCenter_EventScript_MomMenu
+	end
+
+PokemonCenter_EventScript_MomCantModifyEgg::
+	msgbox PokemonCenter_Text_MomEgg, MSGBOX_DEFAULT
+	goto PokemonCenter_EventScript_MomMenu
+	end
+
+PokemonCenter_EventScript_MomNotEnoughMoney::
+	msgbox PokemonCenter_Text_MomNotEnoughMoney, MSGBOX_DEFAULT
+	goto PokemonCenter_EventScript_MomMenu
 	end
 
 PokemonCenter_EventScript_MomNature::
@@ -74,3 +113,30 @@ PokemonCenter_Text_MomNotReady:
 PokemonCenter_Text_MomGoodbye:
 	.string "Take care out there, {PLAYER}!\n"
 	.string "And don't forget to eat well!$"
+
+PokemonCenter_Text_MomWhichMon:
+	.string "Which POKéMON would you like me\n"
+	.string "to help, dear?$"
+
+PokemonCenter_Text_MomEgg:
+	.string "Oh, that's an EGG, dear.\n"
+	.string "It's much too young for that!$"
+
+PokemonCenter_Text_MomNotEnoughMoney:
+	.string "Oh dear, you don't have enough\n"
+	.string "money for that.$"
+
+PokemonCenter_Text_MomWhichStat:
+	.string "Which one should I train?$"
+
+PokemonCenter_Text_MomHyperConfirm:
+	.string "I'll max out {STR_VAR_1}'s {STR_VAR_3}\n"
+	.string "for ¥{STR_VAR_2}. Is that all right?$"
+
+PokemonCenter_Text_MomHyperDone:
+	.string "All done! {STR_VAR_1} has been\n"
+	.string "hyper trained, dear!$"
+
+PokemonCenter_Text_MomHyperAlreadyPerfect:
+	.string "That's already as strong as it\n"
+	.string "can be, dear!$"

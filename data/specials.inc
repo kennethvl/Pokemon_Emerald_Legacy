@@ -543,3 +543,7 @@ gSpecials::
 	def_special CheckFoundAllKecleon
 	def_special CheckGotAllKantoStarters
 	def_special UpdateGymLeaderRematch
+	def_special MomCanModifyPartyMon
+	def_special MomBufferHyperTraining
+	def_special MomApplyHyperTraining
+	def_special MomPayForService
