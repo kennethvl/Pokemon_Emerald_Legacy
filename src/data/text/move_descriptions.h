@@ -590,8 +590,8 @@ static const u8 sSporeDescription[] = _(
     "that always induce sleep.");
 
 static const u8 sFlashDescription[] = _(
-    "Looses a powerful blast of\n"
-    "light that cuts accuracy.");
+    "A blinding electric flash that\n"
+    "damages and cuts accuracy.");
 
 static const u8 sPsywaveDescription[] = _(
     "Attacks with a psychic\n"

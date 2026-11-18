@@ -1394,8 +1394,8 @@ static const u8 sHM04Desc[] = _(
     "the foe.");
 
 static const u8 sHM05Desc[] = _(
-    "Looses a powerful\n"
-    "blast of light that\n"
+    "A blinding electric\n"
+    "flash that damages and\n"
     "reduces accuracy.");
 
 static const u8 sHM06Desc[] = _(
