@@ -7,6 +7,7 @@ BattleFrontier_PokemonCenter_1F_MapScripts::
 
 BattleFrontier_PokemonCenter_1F_OnTransition:
 	setrespawn HEAL_LOCATION_BATTLE_FRONTIER_OUTSIDE_EAST
+	call PokemonCenter_EventScript_UpdateMom
 	end
 
 BattleFrontier_PokemonCenter_1F_EventScript_Nurse::

@@ -7,6 +7,7 @@ SootopolisCity_PokemonCenter_1F_MapScripts::
 
 SootopolisCity_PokemonCenter_1F_OnTransition:
 	setrespawn HEAL_LOCATION_SOOTOPOLIS_CITY
+	call PokemonCenter_EventScript_UpdateMom
 	end
 
 SootopolisCity_PokemonCenter_1F_EventScript_Nurse::

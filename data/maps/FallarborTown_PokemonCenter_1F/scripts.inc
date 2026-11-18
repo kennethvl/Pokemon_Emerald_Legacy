@@ -8,6 +8,7 @@ FallarborTown_PokemonCenter_1F_MapScripts::
 
 FallarborTown_PokemonCenter_1F_OnTransition:
 	setrespawn HEAL_LOCATION_FALLARBOR_TOWN
+	call PokemonCenter_EventScript_UpdateMom
 	call Common_EventScript_UpdateBrineyLocation
 	end
 

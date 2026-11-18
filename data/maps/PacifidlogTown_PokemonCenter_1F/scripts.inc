@@ -7,6 +7,7 @@ PacifidlogTown_PokemonCenter_1F_MapScripts::
 
 PacifidlogTown_PokemonCenter_1F_OnTransition:
 	setrespawn HEAL_LOCATION_PACIFIDLOG_TOWN
+	call PokemonCenter_EventScript_UpdateMom
 	end
 
 PacifidlogTown_PokemonCenter_1F_EventScript_Nurse::

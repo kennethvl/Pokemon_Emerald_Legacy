@@ -7,6 +7,7 @@ DewfordTown_PokemonCenter_1F_MapScripts::
 
 DewfordTown_PokemonCenter_1F_OnTransition:
 	setrespawn HEAL_LOCATION_DEWFORD_TOWN
+	call PokemonCenter_EventScript_UpdateMom
 	call Common_EventScript_UpdateBrineyLocation
 	end
 

@@ -615,6 +615,20 @@ static const struct MenuAction MultichoiceList_FossilPostGame[] =
     {gText_Exit},
 };
 
+static const u8 sText_MomHyperTraining[] = _("HYPER TRAINING");
+static const u8 sText_MomNature[] = _("NATURE");
+static const u8 sText_MomAbility[] = _("ABILITY");
+static const u8 sText_MomHiddenPower[] = _("HIDDEN POWER");
+
+static const struct MenuAction MultichoiceList_PkmnCenterMom[] =
+{
+    {sText_MomHyperTraining},
+    {sText_MomNature},
+    {sText_MomAbility},
+    {sText_MomHiddenPower},
+    {gText_Cancel},
+};
+
 static const struct MenuAction MultichoiceList_YesNo[] =
 {
     {gText_Yes},
@@ -909,6 +923,7 @@ static const struct MultichoiceListStruct sMultichoiceLists[] =
     [MULTI_SLATEPORT_TENT_RULES]       = MULTICHOICE(MultichoiceList_SlateportTentRules),
     [MULTI_FALLARBOR_TENT_RULES]       = MULTICHOICE(MultichoiceList_FallarborTentRules),
     [MULTI_TAG_MATCH_TYPE]             = MULTICHOICE(MultichoiceList_TagMatchType),
+    [MULTI_PKMN_CENTER_MOM]            = MULTICHOICE(MultichoiceList_PkmnCenterMom),
 };
 
 const u8 *const gStdStrings[] =
