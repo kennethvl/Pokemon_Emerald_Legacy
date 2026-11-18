@@ -54,6 +54,7 @@ RustboroCity_Mart_Pokemart_Basic:
 	.2byte ITEM_NEST_BALL
 	.2byte ITEM_REPEAT_BALL
 	.2byte ITEM_TIMER_BALL
+	.2byte ITEM_MOOMOO_MILK
 	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
@@ -87,6 +88,7 @@ RustboroCity_Mart_Pokemart_Expanded:
 	.2byte ITEM_NET_BALL
 	.2byte ITEM_DIVE_BALL
 	.2byte ITEM_NEST_BALL
+	.2byte ITEM_MOOMOO_MILK
 	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
@@ -115,6 +117,7 @@ RustboroCity_Mart_Pokemart_PostGame:
 	.2byte ITEM_NET_BALL
 	.2byte ITEM_DIVE_BALL
 	.2byte ITEM_NEST_BALL
+	.2byte ITEM_MOOMOO_MILK
 	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release

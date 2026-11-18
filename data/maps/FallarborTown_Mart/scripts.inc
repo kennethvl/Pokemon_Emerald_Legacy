@@ -45,6 +45,9 @@ FallarborTown_Mart_Pokemart:
 	.2byte ITEM_NEST_BALL
 	.2byte ITEM_REPEAT_BALL
 	.2byte ITEM_TIMER_BALL
+	.2byte ITEM_MOOMOO_MILK
+	.2byte ITEM_PP_UP
+	.2byte ITEM_ELIXIR
 	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
@@ -70,6 +73,9 @@ FallarborTown_Mart_Pokemart_PostGame:
 	.2byte ITEM_NEST_BALL
 	.2byte ITEM_REPEAT_BALL
 	.2byte ITEM_TIMER_BALL
+	.2byte ITEM_MOOMOO_MILK
+	.2byte ITEM_PP_UP
+	.2byte ITEM_ELIXIR
 	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
