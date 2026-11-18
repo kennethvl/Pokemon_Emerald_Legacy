@@ -661,7 +661,7 @@ static bool8 TryGenerateWildMon(const struct WildPokemonInfo *wildMonInfo, u8 ar
 
     level = ChooseWildMonLevel(&wildMonInfo->wildPokemon[wildMonIndex]);
     species = wildMonInfo->wildPokemon[wildMonIndex].species;
-    if (area == WILD_AREA_LAND && IsOnRoute101())
+    if (area == WILD_AREA_LAND && IsOnRoute101() && FlagGet(FLAG_SYS_POKEDEX_GET)) // only after receiving the Pokédex
     {
         u8 roll = Random() % 100;
 
