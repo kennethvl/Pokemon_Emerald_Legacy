@@ -95,6 +95,8 @@ enum {
     MON_DATA_SPATK2,
     MON_DATA_SPDEF2,
     MON_DATA_DEAD,
+    MON_DATA_NATURE_OVERRIDE,
+    MON_DATA_HP_TYPE_OVERRIDE,
 };
 
 struct PokemonSubstruct0
@@ -104,7 +106,9 @@ struct PokemonSubstruct0
     u32 experience;
     u8 ppBonuses;
     u8 friendship;
-    u16 filler;
+    u16 natureOverride:5;  // Mom: stat nature override. 0 = none, otherwise nature + 1
+    u16 hpTypeOverride:5;  // Mom: Hidden Power type override. 0 = none, otherwise type + 1
+    u16 filler:6;
 };
 
 struct PokemonSubstruct1
@@ -479,6 +483,8 @@ u8 GetItemEffectParamOffset(u16 itemId, u8 effectByte, u8 effectBit);
 u8 *UseStatIncreaseItem(u16 itemId);
 u8 GetNature(struct Pokemon *mon);
 u8 GetNatureFromPersonality(u32 personality);
+u8 GetMonStatNature(struct Pokemon *mon);
+u8 GetMonHiddenPowerType(struct Pokemon *mon);
 u16 GetEvolutionTargetSpecies(struct Pokemon *mon, u8 type, u16 evolutionItem);
 u16 HoennPokedexNumToSpecies(u16 hoennNum);
 u16 NationalPokedexNumToSpecies(u16 nationalNum);

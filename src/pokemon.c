@@ -23,6 +23,7 @@
 #include "pokeblock.h"
 #include "pokemon.h"
 #include "level_up_logic.h"
+#include "mon_modifier_logic.h"
 #include "pokemon_animation.h"
 #include "pokemon_summary_screen.h"
 #include "pokemon_storage_system.h"
@@ -3069,6 +3070,8 @@ void GiveBoxMonInitialMoveset(struct BoxPokemon *boxMon)
     }
 }
 
+// The Mom override bit fields live in what used to be a 16-bit filler; the save layout must not change.
+STATIC_ASSERT(sizeof(struct PokemonSubstruct0) == 12, Substruct0SizeChanged)
 STATIC_ASSERT(LEVELLOGIC_MOVE_ID == LEVEL_UP_MOVE_ID, LevelLogicMoveIdMismatch)
 STATIC_ASSERT(LEVELLOGIC_MOVE_LV == LEVEL_UP_MOVE_LV, LevelLogicMoveLvMismatch)
 STATIC_ASSERT(LEVELLOGIC_END == LEVEL_UP_END, LevelLogicEndMismatch)
@@ -3913,6 +3916,12 @@ u32 GetBoxMonData3(struct BoxPokemon *boxMon, s32 field, u8 *data)
     case MON_DATA_PP_BONUSES:
         retVal = substruct0->ppBonuses;
         break;
+    case MON_DATA_NATURE_OVERRIDE:
+        retVal = substruct0->natureOverride;
+        break;
+    case MON_DATA_HP_TYPE_OVERRIDE:
+        retVal = substruct0->hpTypeOverride;
+        break;
     case MON_DATA_FRIENDSHIP:
         retVal = substruct0->friendship;
         break;
@@ -4291,6 +4300,12 @@ void SetBoxMonData(struct BoxPokemon *boxMon, s32 field, const void *dataArg)
         break;
     case MON_DATA_PP_BONUSES:
         SET8(substruct0->ppBonuses);
+        break;
+    case MON_DATA_NATURE_OVERRIDE:
+        SET8(substruct0->natureOverride);
+        break;
+    case MON_DATA_HP_TYPE_OVERRIDE:
+        SET8(substruct0->hpTypeOverride);
         break;
     case MON_DATA_FRIENDSHIP:
         SET8(substruct0->friendship);
@@ -5545,6 +5560,27 @@ u8 GetNature(struct Pokemon *mon)
 u8 GetNatureFromPersonality(u32 personality)
 {
     return personality % NUM_NATURES;
+}
+
+// Nature used for stat calculation: Mom's nature override if set, otherwise the real nature.
+// GetNature() keeps returning the real (personality) nature for everything else.
+u8 GetMonStatNature(struct Pokemon *mon)
+{
+    return ModLogic_StatNature(GetMonData(mon, MON_DATA_PERSONALITY, 0), GetMonData(mon, MON_DATA_NATURE_OVERRIDE, 0), NUM_NATURES);
+}
+
+// Hidden Power type: Mom's override if set, otherwise derived from the IVs.
+u8 GetMonHiddenPowerType(struct Pokemon *mon)
+{
+    u8 ivs[NUM_STATS];
+
+    ivs[STAT_HP] = GetMonData(mon, MON_DATA_HP_IV, 0);
+    ivs[STAT_ATK] = GetMonData(mon, MON_DATA_ATK_IV, 0);
+    ivs[STAT_DEF] = GetMonData(mon, MON_DATA_DEF_IV, 0);
+    ivs[STAT_SPEED] = GetMonData(mon, MON_DATA_SPEED_IV, 0);
+    ivs[STAT_SPATK] = GetMonData(mon, MON_DATA_SPATK_IV, 0);
+    ivs[STAT_SPDEF] = GetMonData(mon, MON_DATA_SPDEF_IV, 0);
+    return ModLogic_HiddenPowerType(ivs, GetMonData(mon, MON_DATA_HP_TYPE_OVERRIDE, 0), NUMBER_OF_MON_TYPES, TYPE_MYSTERY);
 }
 
 u16 GetEvolutionTargetSpecies(struct Pokemon *mon, u8 mode, u16 evolutionItem)
