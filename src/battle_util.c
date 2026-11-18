@@ -1,5 +1,6 @@
 #include "global.h"
 #include "battle.h"
+#include "mon_modifier_logic.h"
 #include "battle_anim.h"
 #include "battle_arena.h"
 #include "battle_pyramid.h"
@@ -4076,4 +4077,22 @@ u8 IsMonDisobedient(void)
             return 1;
         }
     }
+}
+
+// Hidden Power type of a battler: Mom's override for the player's Pokémon if it has one, otherwise from its IVs.
+u8 GetBattlerHiddenPowerType(u8 battler)
+{
+    u8 ivs[NUM_STATS];
+    u8 storedOverride = MODLOGIC_NO_OVERRIDE;
+
+    ivs[STAT_HP] = gBattleMons[battler].hpIV;
+    ivs[STAT_ATK] = gBattleMons[battler].attackIV;
+    ivs[STAT_DEF] = gBattleMons[battler].defenseIV;
+    ivs[STAT_SPEED] = gBattleMons[battler].speedIV;
+    ivs[STAT_SPATK] = gBattleMons[battler].spAttackIV;
+    ivs[STAT_SPDEF] = gBattleMons[battler].spDefenseIV;
+    if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+        storedOverride = GetMonData(&gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_HP_TYPE_OVERRIDE);
+
+    return ModLogic_HiddenPowerType(ivs, storedOverride, NUMBER_OF_MON_TYPES, TYPE_MYSTERY);
 }

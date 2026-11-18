@@ -135,12 +135,38 @@ PokemonCenter_EventScript_MomOnlyOneAbility::
 	goto PokemonCenter_EventScript_MomMenu
 	end
 
+@ ---- Hidden Power type change: the type no longer depends on the IVs ----
 PokemonCenter_EventScript_MomHiddenPower::
-	goto PokemonCenter_EventScript_MomNotReady
+	msgbox PokemonCenter_Text_MomWhichMon, MSGBOX_DEFAULT
+	special ChoosePartyMon
+	waitstate
+	goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, PokemonCenter_EventScript_MomMenu
+	special MomCanModifyPartyMon
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomCantModifyEgg
+	message PokemonCenter_Text_MomWhichType
+	waitmessage
+	copyvar VAR_0x8007, VAR_0x8004
+	setvar VAR_0x8004, SCROLL_MULTI_MOM_HP_TYPES
+	special ShowScrollableMultichoice
+	waitstate
+	copyvar VAR_0x8004, VAR_0x8007
+	goto_if_eq VAR_RESULT, MULTI_B_PRESSED, PokemonCenter_EventScript_MomMenu
+	copyvar VAR_0x8005, VAR_RESULT
+	special MomBufferHiddenPowerChange
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomSameType
+	msgbox PokemonCenter_Text_MomTypeConfirm, MSGBOX_YESNO
+	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomMenu
+	special MomPayForService
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomNotEnoughMoney
+	special MomApplyHiddenPowerChange
+	playfanfare MUS_LEVEL_UP
+	msgbox PokemonCenter_Text_MomTypeDone, MSGBOX_DEFAULT
+	waitfanfare
+	goto PokemonCenter_EventScript_MomMenu
 	end
 
-PokemonCenter_EventScript_MomNotReady::
-	msgbox PokemonCenter_Text_MomNotReady, MSGBOX_DEFAULT
+PokemonCenter_EventScript_MomSameType::
+	msgbox PokemonCenter_Text_MomSameType, MSGBOX_DEFAULT
 	goto PokemonCenter_EventScript_MomMenu
 	end
 
@@ -157,11 +183,6 @@ PokemonCenter_Text_MomWelcome:
 PokemonCenter_Text_MomWhatCanIDo:
 	.string "Now, what can your mother do for\n"
 	.string "you today, dear?$"
-
-PokemonCenter_Text_MomNotReady:
-	.string "Oh, I'm still learning how to do\n"
-	.string "that one, dear.\p"
-	.string "Ask me again a little later.$"
 
 PokemonCenter_Text_MomGoodbye:
 	.string "Take care out there, {PLAYER}!\n"
@@ -222,3 +243,19 @@ PokemonCenter_Text_MomNatureDone:
 PokemonCenter_Text_MomSameNature:
 	.string "Oh, its stats already follow that\n"
 	.string "nature, dear!$"
+
+PokemonCenter_Text_MomWhichType:
+	.string "Which type should HIDDEN POWER be?$"
+
+PokemonCenter_Text_MomTypeConfirm:
+	.string "HIDDEN POWER will be {STR_VAR_3}-type\n"
+	.string "instead of {STR_VAR_2}-type.\p"
+	.string "That's ¥{STR_VAR_1}. Is that all right?$"
+
+PokemonCenter_Text_MomTypeDone:
+	.string "All done! HIDDEN POWER is now\n"
+	.string "{STR_VAR_3}-type, dear!$"
+
+PokemonCenter_Text_MomSameType:
+	.string "Oh, HIDDEN POWER is already that\n"
+	.string "type, dear!$"

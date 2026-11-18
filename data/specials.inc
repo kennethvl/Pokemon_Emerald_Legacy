@@ -550,4 +550,6 @@ gSpecials::
 	def_special MomApplyAbilityChange
 	def_special MomBufferNatureChange
 	def_special MomApplyNatureChange
+	def_special MomBufferHiddenPowerChange
+	def_special MomApplyHiddenPowerChange
 	def_special MomPayForService

@@ -11,6 +11,7 @@
 #include "constants/abilities.h"
 #include "constants/field_specials.h"
 #include "constants/pkmn_center_mom.h"
+#include "constants/pokemon.h"
 
 // Party Pokémon the service is applied to: VAR_0x8004 (set by the ChoosePartyMon special).
 #define SERVICE_MON (&gPlayerParty[gSpecialVar_0x8004])
@@ -195,6 +196,14 @@ static void BuildNatureOptionText(u8 nature)
     StringCopy(str, sNatureStatNames[down]);
 }
 
+// ---- Hidden Power type change (bypasses the IV-derived type) ----
+
+static const u8 sHiddenPowerTypes[MOM_NUM_HIDDEN_POWER_TYPES] =
+{
+    TYPE_FIGHTING, TYPE_FLYING, TYPE_POISON, TYPE_GROUND, TYPE_ROCK, TYPE_BUG, TYPE_GHOST, TYPE_STEEL,
+    TYPE_FIRE, TYPE_WATER, TYPE_GRASS, TYPE_ELECTRIC, TYPE_PSYCHIC, TYPE_ICE, TYPE_DRAGON, TYPE_DARK,
+};
+
 const u8 *MomGetScrollOptionText(u8 scrollId, u8 index)
 {
     if (scrollId == SCROLL_MULTI_MOM_NATURES)
@@ -202,7 +211,35 @@ const u8 *MomGetScrollOptionText(u8 scrollId, u8 index)
         BuildNatureOptionText(index);
         return sNatureOptionText[index];
     }
+    if (scrollId == SCROLL_MULTI_MOM_HP_TYPES)
+        return gTypeNames[sHiddenPowerTypes[index]];
     return gText_EmptyString7;
+}
+
+// Inputs: VAR_0x8004 = party slot, VAR_0x8005 = chosen type (list index).
+// Outputs: VAR_RESULT = TRUE if the type would change; STR_VAR_1 = price, STR_VAR_2 = current Hidden Power type,
+//          STR_VAR_3 = chosen type; VAR_0x8006 = price.
+void MomBufferHiddenPowerChange(void)
+{
+    struct Pokemon *mon = SERVICE_MON;
+    u8 current = GetMonHiddenPowerType(mon);
+    u8 chosen = sHiddenPowerTypes[gSpecialVar_0x8005];
+
+    ConvertIntToDecimalStringN(gStringVar1, MOM_SERVICE_PRICE, STR_CONV_MODE_LEFT_ALIGN, 5);
+    StringCopy(gStringVar2, gTypeNames[current]);
+    StringCopy(gStringVar3, gTypeNames[chosen]);
+    gSpecialVar_0x8006 = MOM_SERVICE_PRICE;
+    gSpecialVar_Result = chosen != current;
+}
+
+// Stores the chosen type (VAR_0x8005) as the Hidden Power type, independent of the IVs. Hyper Training or any
+// other IV change no longer affects it. Hidden Power's power still comes from the IVs.
+void MomApplyHiddenPowerChange(void)
+{
+    struct Pokemon *mon = SERVICE_MON;
+    u8 stored = ModLogic_EncodeOverride(sHiddenPowerTypes[gSpecialVar_0x8005]);
+
+    SetMonData(mon, MON_DATA_HP_TYPE_OVERRIDE, &stored);
 }
 
 // Inputs: VAR_0x8004 = party slot, VAR_0x8005 = chosen nature (list index).

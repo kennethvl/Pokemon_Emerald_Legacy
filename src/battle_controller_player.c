@@ -19,6 +19,8 @@
 #include "party_menu.h"
 #include "pokeball.h"
 #include "pokemon.h"
+#include "event_data.h"
+#include "battle_util.h"
 #include "random.h"
 #include "recorded_battle.h"
 #include "reshow_battle_screen.h"
@@ -1573,7 +1575,10 @@ static void MoveSelectionDisplayMoveType(void)
     *(txtPtr)++ = EXT_CTRL_CODE_FONT;
     *(txtPtr)++ = FONT_NORMAL;
 
-    StringCopy(txtPtr, gTypeNames[gBattleMoves[moveInfo->moves[gMoveSelectionCursor[gActiveBattler]]].type]);
+    if (moveInfo->moves[gMoveSelectionCursor[gActiveBattler]] == MOVE_HIDDEN_POWER && FlagGet(FLAG_SHOW_HIDDEN_POWER))
+        StringCopy(txtPtr, gTypeNames[GetBattlerHiddenPowerType(gActiveBattler)]);
+    else
+        StringCopy(txtPtr, gTypeNames[gBattleMoves[moveInfo->moves[gMoveSelectionCursor[gActiveBattler]]].type]);
     BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_MOVE_TYPE);
 }
 

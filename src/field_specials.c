@@ -2432,6 +2432,16 @@ void ShowScrollableMultichoice(void)
         task->tKeepOpenAfterSelect = FALSE;
         task->tTaskId = taskId;
         break;
+    case SCROLL_MULTI_MOM_HP_TYPES:
+        task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;
+        task->tNumItems = MOM_NUM_HIDDEN_POWER_TYPES;
+        task->tLeft = 1;
+        task->tTop = 1;
+        task->tWidth = 10;
+        task->tHeight = 12;
+        task->tKeepOpenAfterSelect = FALSE;
+        task->tTaskId = taskId;
+        break;
     case SCROLL_MULTI_BATTLE_TENT_RULES:
         task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;
         task->tNumItems = 7;
@@ -2625,7 +2635,7 @@ static const u8 *const sScrollableMultichoiceOptions[][MAX_SCROLL_MULTI_LENGTH] 
 // Options of Mom's lists are built at runtime (see mom_services.c); all others are in the table above.
 static const u8 *GetScrollableMultichoiceText(u8 scrollId, u8 index)
 {
-    if (scrollId == SCROLL_MULTI_MOM_NATURES)
+    if (scrollId == SCROLL_MULTI_MOM_NATURES || scrollId == SCROLL_MULTI_MOM_HP_TYPES)
         return MomGetScrollOptionText(scrollId, index);
     return sScrollableMultichoiceOptions[scrollId][index];
 }

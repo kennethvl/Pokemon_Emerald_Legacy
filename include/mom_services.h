@@ -10,7 +10,12 @@ void MomBufferAbilityChange(void);
 void MomApplyAbilityChange(void);
 void MomBufferNatureChange(void);
 void MomApplyNatureChange(void);
+void MomBufferHiddenPowerChange(void);
+void MomApplyHiddenPowerChange(void);
 void MomPayForService(void);
+
+// Hidden Power can be any type except Normal and ??? (see sHiddenPowerTypes in mom_services.c).
+#define MOM_NUM_HIDDEN_POWER_TYPES 16
 
 // Text of option `index` of the runtime-built scrollable multichoice lists (SCROLL_MULTI_MOM_*).
 const u8 *MomGetScrollOptionText(u8 scrollId, u8 index);
