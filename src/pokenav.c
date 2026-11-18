@@ -7,6 +7,7 @@
 #include "palette.h"
 #include "pokemon_storage_system.h"
 #include "pokenav.h"
+#include "region_map.h"
 
 #define LOOPED_TASK_DECODE_STATE(action) (action - 5)
 
@@ -414,6 +415,20 @@ static bool32 AnyMonHasRibbon(void)
     return FALSE;
 }
 
+static bool8 sOpenFlyMapAfterPokenav = FALSE;
+
+// Called when MAP is chosen in the PokéNav main menu. If Fly could be used here (and the PokéNav was opened
+// normally, not by a script), asks the PokéNav to shut down and open the Fly map. Returns TRUE if so.
+bool32 PokenavTryOpenFlyMap(void)
+{
+    if (gPokenavResources->mode == POKENAV_MODE_NORMAL && CanUseTownMapToFly())
+    {
+        sOpenFlyMapAfterPokenav = TRUE;
+        return TRUE;
+    }
+    return FALSE;
+}
+
 static void CB2_Pokenav(void)
 {
     RunTasks();
@@ -492,7 +507,13 @@ static void Task_Pokenav(u8 taskId)
 
             FreeMenuHandlerSubstruct1();
             FreePokenavResources();
-            if (calledFromScript)
+            if (sOpenFlyMapAfterPokenav)
+            {
+                // The Town Map acts like Fly: back out of the Fly map to the field with the start menu open.
+                sOpenFlyMapAfterPokenav = FALSE;
+                OpenFlyMapFromTownMap(CB2_ReturnToFieldWithOpenMenu);
+            }
+            else if (calledFromScript)
                 SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
             else
                 SetMainCallback2(CB2_ReturnToFieldWithOpenMenu);

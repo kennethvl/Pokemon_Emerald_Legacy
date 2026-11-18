@@ -390,6 +390,7 @@ bool32 PokenavCallback_Init_ConditionMenu(void);
 bool32 PokenavCallback_Init_ConditionSearchMenu(void);
 u32 GetMenuHandlerCallback(void);
 void FreeMenuHandlerSubstruct1(void);
+bool32 PokenavTryOpenFlyMap(void);
 int GetPokenavMenuType(void);
 int GetPokenavCursorPos(void);
 int GetCurrentMenuItemId(void);

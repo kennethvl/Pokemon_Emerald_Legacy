@@ -221,6 +221,9 @@ static u32 HandleMainMenuInput(struct Pokenav_Menu *menu)
         switch (sMenuItems[menu->menuType][menu->cursorPos])
         {
         case POKENAV_MENUITEM_MAP:
+            // The map acts like Fly: where Fly could be used, leave the PokéNav and open the Fly map instead.
+            if (PokenavTryOpenFlyMap())
+                return POKENAV_MENU_FUNC_EXIT;
             menu->helpBarIndex = gSaveBlock2Ptr->regionMapZoom ? HELPBAR_MAP_ZOOMED_IN : HELPBAR_MAP_ZOOMED_OUT;
             SetMenuIdAndCB(menu, POKENAV_REGION_MAP);
             return POKENAV_MENU_FUNC_OPEN_FEATURE;

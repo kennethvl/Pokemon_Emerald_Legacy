@@ -1640,6 +1640,25 @@ bool32 IsEventIslandMapSecId(u8 mapSecId)
     return FALSE;
 }
 
+// Where to go if the player backs out of the Fly map. NULL = the party menu (the Fly move).
+static MainCallback sFlyMapCancelCallback = NULL;
+
+// The Town Map (item or PokéNav map) acts like Fly: it can be used wherever the Fly move could be used,
+// without needing a Pokémon that knows Fly or the badge.
+bool8 CanUseTownMapToFly(void)
+{
+    return Overworld_MapTypeAllowsTeleportAndFly(gMapHeader.mapType) == TRUE;
+}
+
+// Opens the Fly map from a Town Map. cancelCallback is the screen to return to if the player presses B.
+void OpenFlyMapFromTownMap(MainCallback cancelCallback)
+{
+    sFlyMapCancelCallback = cancelCallback;
+    // The fly-out animation shows a Pokémon; there is no party menu selection, so use the lead Pokémon.
+    gPartyMenu.slotId = GetLeadMonIndex();
+    SetMainCallback2(CB2_OpenFlyMap);
+}
+
 void CB2_OpenFlyMap(void)
 {
     switch (gMain.state)
@@ -2011,10 +2030,15 @@ static void CB_ExitFlyMap(void)
                 }
                 ReturnToFieldFromFlyMapSelect();
             }
+            else if (sFlyMapCancelCallback != NULL)
+            {
+                SetMainCallback2(sFlyMapCancelCallback);
+            }
             else
             {
                 SetMainCallback2(CB2_ReturnToPartyMenuFromFlyMap);
             }
+            sFlyMapCancelCallback = NULL;
             TRY_FREE_AND_SET_NULL(sFlyMap);
             FreeAllWindowBuffers();
         }
