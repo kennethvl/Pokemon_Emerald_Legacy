@@ -690,21 +690,21 @@
 #define FLAG_FRONTIER_SEEDOT_NPC_TRADE_COMPLETED    0x28B
 #define FLAG_FRONTIER_PLUSLE_NPC_TRADE_COMPLETED    0x28C
 #define FLAG_RECEIVED_SHINY_BELDUM      0x28D
-#define FLAG_UNUSED_0x28E  0x28E // Unused Flag
-#define FLAG_UNUSED_0x28F  0x28F // Unused Flag
-#define FLAG_UNUSED_0x290  0x290 // Unused Flag
-#define FLAG_UNUSED_0x291  0x291 // Unused Flag
-#define FLAG_UNUSED_0x292  0x292 // Unused Flag
-#define FLAG_UNUSED_0x293  0x293 // Unused Flag
-#define FLAG_UNUSED_0x294  0x294 // Unused Flag
-#define FLAG_UNUSED_0x295  0x295 // Unused Flag
-#define FLAG_UNUSED_0x296  0x296 // Unused Flag
-#define FLAG_UNUSED_0x297  0x297 // Unused Flag
-#define FLAG_UNUSED_0x298  0x298 // Unused Flag
-#define FLAG_UNUSED_0x299  0x299 // Unused Flag
-#define FLAG_UNUSED_0x29A  0x29A // Unused Flag
-#define FLAG_UNUSED_0x29B  0x29B // Unused Flag
-#define FLAG_UNUSED_0x29C  0x29C // Unused Flag
+#define FLAG_VISITED_OLDALE_POKEMON_CENTER  0x28E // Set when the player enters this city's Pokémon Center; required to fly there with the Town Map
+#define FLAG_VISITED_PETALBURG_POKEMON_CENTER  0x28F // Set when the player enters this city's Pokémon Center; required to fly there with the Town Map
+#define FLAG_VISITED_RUSTBORO_POKEMON_CENTER  0x290 // Set when the player enters this city's Pokémon Center; required to fly there with the Town Map
+#define FLAG_VISITED_DEWFORD_POKEMON_CENTER  0x291 // Set when the player enters this city's Pokémon Center; required to fly there with the Town Map
+#define FLAG_VISITED_SLATEPORT_POKEMON_CENTER  0x292 // Set when the player enters this city's Pokémon Center; required to fly there with the Town Map
+#define FLAG_VISITED_MAUVILLE_POKEMON_CENTER  0x293 // Set when the player enters this city's Pokémon Center; required to fly there with the Town Map
+#define FLAG_VISITED_VERDANTURF_POKEMON_CENTER  0x294 // Set when the player enters this city's Pokémon Center; required to fly there with the Town Map
+#define FLAG_VISITED_FALLARBOR_POKEMON_CENTER  0x295 // Set when the player enters this city's Pokémon Center; required to fly there with the Town Map
+#define FLAG_VISITED_LAVARIDGE_POKEMON_CENTER  0x296 // Set when the player enters this city's Pokémon Center; required to fly there with the Town Map
+#define FLAG_VISITED_FORTREE_POKEMON_CENTER  0x297 // Set when the player enters this city's Pokémon Center; required to fly there with the Town Map
+#define FLAG_VISITED_LILYCOVE_POKEMON_CENTER  0x298 // Set when the player enters this city's Pokémon Center; required to fly there with the Town Map
+#define FLAG_VISITED_MOSSDEEP_POKEMON_CENTER  0x299 // Set when the player enters this city's Pokémon Center; required to fly there with the Town Map
+#define FLAG_VISITED_SOOTOPOLIS_POKEMON_CENTER  0x29A // Set when the player enters this city's Pokémon Center; required to fly there with the Town Map
+#define FLAG_VISITED_PACIFIDLOG_POKEMON_CENTER  0x29B // Set when the player enters this city's Pokémon Center; required to fly there with the Town Map
+#define FLAG_VISITED_EVER_GRANDE_POKEMON_CENTER  0x29C // Set when the player enters this city's Pokémon Center; required to fly there with the Town Map
 #define FLAG_UNUSED_0x29D  0x29D // Unused Flag
 #define FLAG_UNUSED_0x29E  0x29E // Unused Flag
 #define FLAG_UNUSED_0x29F  0x29F // Unused Flag

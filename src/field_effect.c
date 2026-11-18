@@ -1335,6 +1335,15 @@ static void SpriteCB_HallOfFameMonitor(struct Sprite *sprite)
 #undef sSpriteId
 #undef sEffectSpriteId
 
+// Used by the Town Map: warp straight to the chosen destination without the Fly animation.
+void WarpToFlyDestinationInstantly(void)
+{
+    Overworld_ResetStateAfterFly();
+    WarpIntoMap();
+    gFieldCallback = NULL;
+    SetMainCallback2(CB2_LoadMap);
+}
+
 void ReturnToFieldFromFlyMapSelect(void)
 {
     SetMainCallback2(CB2_ReturnToField);
