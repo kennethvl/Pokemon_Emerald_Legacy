@@ -30,7 +30,6 @@
 #include "party_menu.h"
 #include "pokeblock.h"
 #include "pokemon.h"
-#include "region_map.h"
 #include "script.h"
 #include "sound.h"
 #include "strings.h"
@@ -71,8 +70,6 @@ static void Task_UseRepel(u8);
 static void Task_CloseCantUseKeyItemMessage(u8);
 static void SetDistanceOfClosestHiddenItem(u8, s16, s16);
 static void CB2_OpenPokeblockFromBag(void);
-static void CB2_OpenTownMapFromBag(void);
-static void Task_OpenRegisteredTownMap(u8 taskId);
 
 // EWRAM variables
 EWRAM_DATA static void(*sItemUseOnFieldCB)(u8 taskId) = NULL;
@@ -643,41 +640,6 @@ static void Task_OpenRegisteredPokeblockCase(u8 taskId)
     {
         CleanupOverworldWindowsAndTilemaps();
         OpenPokeblockCase(PBLOCK_CASE_FIELD, CB2_ReturnToField);
-        DestroyTask(taskId);
-    }
-}
-
-// The Town Map acts like Fly: pick a visited city to fly to (no Fly Pokémon or badge needed).
-void ItemUseOutOfBattle_TownMap(u8 taskId)
-{
-    if (MenuHelpers_IsLinkActive() == TRUE || !CanUseTownMapToFly())
-    {
-        ItemUseOutOfBattle_CannotUse(taskId);
-    }
-    else if (gTasks[taskId].tUsingRegisteredKeyItem != TRUE)
-    {
-        gBagMenu->newScreenCallback = CB2_OpenTownMapFromBag;
-        Task_FadeAndCloseBagMenu(taskId);
-    }
-    else
-    {
-        gFieldCallback = FieldCB_ReturnToFieldNoScript;
-        FadeScreen(FADE_TO_BLACK, 0);
-        gTasks[taskId].func = Task_OpenRegisteredTownMap;
-    }
-}
-
-static void CB2_OpenTownMapFromBag(void)
-{
-    OpenFlyMapFromTownMap(CB2_ReturnToBagMenuPocket);
-}
-
-static void Task_OpenRegisteredTownMap(u8 taskId)
-{
-    if (!gPaletteFade.active)
-    {
-        CleanupOverworldWindowsAndTilemaps();
-        OpenFlyMapFromTownMap(CB2_ReturnToField);
         DestroyTask(taskId);
     }
 }
