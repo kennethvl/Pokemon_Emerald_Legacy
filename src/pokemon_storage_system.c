@@ -563,6 +563,8 @@ EWRAM_DATA static struct ChooseBoxMenu *sChooseBoxMenu = NULL;
 EWRAM_DATA static struct PokemonStorageSystemData *sStorage = NULL;
 EWRAM_DATA static bool8 sInPartyMenu = 0;
 EWRAM_DATA static u8 sCurrentBoxOption = 0;
+EWRAM_DATA static bool8 sOpenedFromStartMenu = FALSE; // exit back to the pause menu instead of the PC menu
+EWRAM_DATA static u8 sStartMenuBoxOption = 0;
 EWRAM_DATA static u8 sDepositBoxId = 0;
 EWRAM_DATA static u8 sWhichToReshow = 0;
 EWRAM_DATA static u8 sLastUsedBox = 0;
@@ -1638,6 +1640,7 @@ static void Task_PCMainMenu(u8 taskId)
         if (!gPaletteFade.active)
         {
             CleanupOverworldWindowsAndTilemaps();
+            sOpenedFromStartMenu = FALSE;
             EnterPokeStorage(task->tInput);
             RemoveWindow(task->tWindowId);
             DestroyTask(taskId);
@@ -1690,8 +1693,29 @@ static void CreateMainMenu(u8 whichMenu, s16 *windowIdPtr)
 static void CB2_ExitPokeStorage(void)
 {
     sPreviousBoxOption = GetCurrentBoxOption();
+    if (sOpenedFromStartMenu)
+    {
+        // Opened from the pause menu: go back to the field with the pause menu open.
+        sOpenedFromStartMenu = FALSE;
+        SetMainCallback2(CB2_ReturnToFieldWithOpenMenu);
+        return;
+    }
     gFieldCallback = FieldTask_ReturnToPcMenu;
     SetMainCallback2(CB2_ReturnToField);
+}
+
+static void CB2_EnterPokeStorageFromStartMenu(void)
+{
+    EnterPokeStorage(sStartMenuBoxOption);
+}
+
+// Opens the Pokémon Storage System straight from the pause menu, in Move Pokémon mode
+// or (moveItems == TRUE) Move Items mode.
+void ShowPokemonStorageSystemFromStartMenu(bool8 moveItems)
+{
+    sOpenedFromStartMenu = TRUE;
+    sStartMenuBoxOption = moveItems ? OPTION_MOVE_ITEMS : OPTION_MOVE_MONS;
+    SetMainCallback2(CB2_EnterPokeStorageFromStartMenu);
 }
 
 static s16 UNUSED StorageSystemGetNextMonIndex(struct BoxPokemon *box, s8 startIdx, u8 stopIdx, u8 mode)

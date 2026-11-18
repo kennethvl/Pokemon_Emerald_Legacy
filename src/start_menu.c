@@ -28,6 +28,7 @@
 #include "palette.h"
 #include "party_menu.h"
 #include "pokedex.h"
+#include "pokemon_storage_system.h"
 #include "pokenav.h"
 #include "safari_zone.h"
 #include "save.h"
@@ -52,6 +53,7 @@ enum
 {
     MENU_ACTION_POKEDEX,
     MENU_ACTION_POKEMON,
+    MENU_ACTION_STORAGE,
     MENU_ACTION_BAG,
     MENU_ACTION_POKENAV,
     MENU_ACTION_PLAYER,
@@ -93,6 +95,8 @@ EWRAM_DATA static u8 sSaveInfoWindowId = 0;
 // Menu action callbacks
 static bool8 StartMenuPokedexCallback(void);
 static bool8 StartMenuPokemonCallback(void);
+static bool8 StartMenuStorageCallback(void);
+static bool8 StartMenuStorageItemsCallback(void);
 static bool8 StartMenuBagCallback(void);
 static bool8 StartMenuPokeNavCallback(void);
 static bool8 StartMenuPlayerNameCallback(void);
@@ -111,6 +115,7 @@ static bool8 BattlePyramidRetireStartCallback(void);
 static bool8 BattlePyramidRetireReturnCallback(void);
 static bool8 BattlePyramidRetireCallback(void);
 static bool8 HandleStartMenuInput(void);
+static bool8 StartMenuHasStorage(void);
 
 // Save dialog callbacks
 static u8 SaveConfirmSaveCallback(void);
@@ -182,6 +187,7 @@ static const struct MenuAction sStartMenuItems[] =
 {
     [MENU_ACTION_POKEDEX]         = {gText_MenuPokedex, {.u8_void = StartMenuPokedexCallback}},
     [MENU_ACTION_POKEMON]         = {gText_MenuPokemon, {.u8_void = StartMenuPokemonCallback}},
+    [MENU_ACTION_STORAGE]         = {gText_MenuStorage, {.u8_void = StartMenuStorageCallback}},
     [MENU_ACTION_BAG]             = {gText_MenuBag,     {.u8_void = StartMenuBagCallback}},
     [MENU_ACTION_POKENAV]         = {gText_MenuPokenav, {.u8_void = StartMenuPokeNavCallback}},
     [MENU_ACTION_PLAYER]          = {gText_MenuPlayer,  {.u8_void = StartMenuPlayerNameCallback}},
@@ -320,6 +326,7 @@ static void BuildNormalStartMenu(void)
     if (FlagGet(FLAG_SYS_POKEMON_GET) == TRUE)
     {
         AddStartMenuAction(MENU_ACTION_POKEMON);
+        AddStartMenuAction(MENU_ACTION_STORAGE);
     }
 
     AddStartMenuAction(MENU_ACTION_BAG);
@@ -589,6 +596,16 @@ void ShowStartMenu(void)
     LockPlayerFieldControls();
 }
 
+static bool8 StartMenuHasStorage(void)
+{
+    u8 i;
+
+    for (i = 0; i < sNumStartMenuActions; i++)
+        if (sCurrentStartMenuActions[i] == MENU_ACTION_STORAGE)
+            return TRUE;
+    return FALSE;
+}
+
 static bool8 HandleStartMenuInput(void)
 {
     if (JOY_NEW(DPAD_UP))
@@ -622,6 +639,15 @@ static bool8 HandleStartMenuInput(void)
            FadeScreen(FADE_TO_BLACK, 0);
         }
 
+        return FALSE;
+    }
+
+    // SELECT opens the Pokémon Storage in Move Items mode from anywhere in the (normal) pause menu.
+    if (JOY_NEW(SELECT_BUTTON) && StartMenuHasStorage())
+    {
+        PlaySE(SE_SELECT);
+        gMenuCallback = StartMenuStorageItemsCallback;
+        FadeScreen(FADE_TO_BLACK, 0);
         return FALSE;
     }
 
@@ -659,6 +685,36 @@ static bool8 StartMenuPokemonCallback(void)
         RemoveExtraStartMenuWindows();
         CleanupOverworldWindowsAndTilemaps();
         SetMainCallback2(CB2_PartyMenuFromStartMenu); // Display party menu
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static bool8 StartMenuStorageCallback(void)
+{
+    if (!gPaletteFade.active)
+    {
+        PlayRainStoppingSoundEffect();
+        RemoveExtraStartMenuWindows();
+        CleanupOverworldWindowsAndTilemaps();
+        ShowPokemonStorageSystemFromStartMenu(FALSE); // Move Pokémon mode
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static bool8 StartMenuStorageItemsCallback(void)
+{
+    if (!gPaletteFade.active)
+    {
+        PlayRainStoppingSoundEffect();
+        RemoveExtraStartMenuWindows();
+        CleanupOverworldWindowsAndTilemaps();
+        ShowPokemonStorageSystemFromStartMenu(TRUE); // Move Items mode
 
         return TRUE;
     }
