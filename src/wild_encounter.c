@@ -621,22 +621,10 @@ static void CreateWildMon(u16 species, u8 level)
 }
 #define TRY_GET_ABILITY_INFLUENCED_WILD_MON_INDEX(wildPokemon, type, ability, ptr, count) TryGetAbilityInfluencedWildMonIndex(wildPokemon, type, ability, ptr, count)
 
-// Route 101 grass also holds the three starters: each is 5% of the grass encounters, always at level 5.
-// (Done here rather than in the encounter tables because the land table only has two 5% slots.)
-#define ROUTE101_STARTER_LEVEL 5
-#define ROUTE101_STARTER_CHANCE_EACH 5 // percent
-static const u16 sRoute101Starters[] = {SPECIES_TREECKO, SPECIES_TORCHIC, SPECIES_MUDKIP};
-
-static bool8 IsOnRoute101(void)
-{
-    return gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(ROUTE101) && gSaveBlock1Ptr->location.mapNum == MAP_NUM(ROUTE101);
-}
-
 static bool8 TryGenerateWildMon(const struct WildPokemonInfo *wildMonInfo, u8 area, u8 flags)
 {
     u8 wildMonIndex = 0;
     u8 level;
-    u16 species;
 
     switch (area)
     {
@@ -660,23 +648,12 @@ static bool8 TryGenerateWildMon(const struct WildPokemonInfo *wildMonInfo, u8 ar
     }
 
     level = ChooseWildMonLevel(&wildMonInfo->wildPokemon[wildMonIndex]);
-    species = wildMonInfo->wildPokemon[wildMonIndex].species;
-    if (area == WILD_AREA_LAND && IsOnRoute101() && FlagGet(FLAG_SYS_POKEDEX_GET)) // only after receiving the Pokédex
-    {
-        u8 roll = Random() % 100;
-
-        if (roll < ARRAY_COUNT(sRoute101Starters) * ROUTE101_STARTER_CHANCE_EACH)
-        {
-            species = sRoute101Starters[roll / ROUTE101_STARTER_CHANCE_EACH];
-            level = ROUTE101_STARTER_LEVEL;
-        }
-    }
     if (flags & WILD_CHECK_REPEL && !IsWildLevelAllowedByRepel(level))
         return FALSE;
     if (gMapHeader.mapLayoutId != LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS && flags & WILD_CHECK_KEEN_EYE && !IsAbilityAllowingEncounter(level))
         return FALSE;
 
-    CreateWildMon(species, level);
+    CreateWildMon(wildMonInfo->wildPokemon[wildMonIndex].species, level);
     return TRUE;
 }
 
