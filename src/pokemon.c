@@ -5569,6 +5569,20 @@ u8 GetMonStatNature(struct Pokemon *mon)
     return ModLogic_StatNature(GetMonData(mon, MON_DATA_PERSONALITY, 0), GetMonData(mon, MON_DATA_NATURE_OVERRIDE, 0), NUM_NATURES);
 }
 
+// Hidden Power's power (80-120), from the IVs.
+u8 GetMonHiddenPowerPower(struct Pokemon *mon)
+{
+    u8 ivs[NUM_STATS];
+
+    ivs[STAT_HP] = GetMonData(mon, MON_DATA_HP_IV, 0);
+    ivs[STAT_ATK] = GetMonData(mon, MON_DATA_ATK_IV, 0);
+    ivs[STAT_DEF] = GetMonData(mon, MON_DATA_DEF_IV, 0);
+    ivs[STAT_SPEED] = GetMonData(mon, MON_DATA_SPEED_IV, 0);
+    ivs[STAT_SPATK] = GetMonData(mon, MON_DATA_SPATK_IV, 0);
+    ivs[STAT_SPDEF] = GetMonData(mon, MON_DATA_SPDEF_IV, 0);
+    return ModLogic_HiddenPowerPowerFromIVs(ivs);
+}
+
 // Hidden Power type: Mom's override if set, otherwise derived from the IVs.
 u8 GetMonHiddenPowerType(struct Pokemon *mon)
 {

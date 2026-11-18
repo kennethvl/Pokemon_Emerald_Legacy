@@ -3699,7 +3699,13 @@ static void PrintMovePowerAndAccuracy(u16 moveIndex)
     {
         FillWindowPixelRect(PSS_LABEL_WINDOW_MOVES_POWER_ACC, PIXEL_FILL(0), 53, 0, 19, 32);
 
-        if (gBattleMoves[moveIndex].power < 2)
+        if (moveIndex == MOVE_HIDDEN_POWER)
+        {
+            // Hidden Power's power depends on the IVs (80-120).
+            ConvertIntToDecimalStringN(gStringVar1, GetMonHiddenPowerPower(&sMonSummaryScreen->currentMon), STR_CONV_MODE_RIGHT_ALIGN, 3);
+            text = gStringVar1;
+        }
+        else if (gBattleMoves[moveIndex].power < 2)
         {
             text = gText_ThreeDashes;
         }
@@ -3975,32 +3981,19 @@ static void SetMoveTypeIcons(void)
     u8 i;
     struct PokeSummary *summary = &sMonSummaryScreen->summary;
     struct Pokemon *mon = &sMonSummaryScreen->currentMon;
-    u16 species = GetMonData(mon, MON_DATA_SPECIES);
 
-    if (!FlagGet(FLAG_SHOW_HIDDEN_POWER))
+    for (i = 0; i < MAX_MON_MOVES; i++)
     {
-        for (i = 0; i < MAX_MON_MOVES; i++)
+        if (summary->moves[i] != MOVE_NONE)
         {
-            if (summary->moves[i] != MOVE_NONE)
-                SetTypeSpritePosAndPal(gBattleMoves[summary->moves[i]].type, 85, 32 + (i * 16), i + SPRITE_ARR_ID_TYPE);
-            else
-                SetSpriteInvisibility(i + SPRITE_ARR_ID_TYPE, TRUE);
+            // Hidden Power shows its real type (from the IVs, or Mom's override) instead of Normal.
+            u8 type = (summary->moves[i] == MOVE_HIDDEN_POWER) ? GetMonHiddenPowerType(mon) : gBattleMoves[summary->moves[i]].type;
+
+            SetTypeSpritePosAndPal(type, 85, 32 + (i * 16), i + SPRITE_ARR_ID_TYPE);
         }
-    }
-    else
-    {
-        for (i = 0; i < MAX_MON_MOVES; i++)
+        else
         {
-            if (summary->moves[i] != MOVE_NONE) {
-                if (summary->moves[i] == MOVE_HIDDEN_POWER) {
-                    u8 type = GetMonHiddenPowerType(mon); // honours Mom's Hidden Power type override
-                    SetTypeSpritePosAndPal(type, 85, 32 + (i * 16), i + SPRITE_ARR_ID_TYPE);
-                } else {
-                    SetTypeSpritePosAndPal(gBattleMoves[summary->moves[i]].type, 85, 32 + (i * 16), i + SPRITE_ARR_ID_TYPE);
-                }
-            }
-            else
-                SetSpriteInvisibility(i + SPRITE_ARR_ID_TYPE, TRUE);
+            SetSpriteInvisibility(i + SPRITE_ARR_ID_TYPE, TRUE);
         }
     }
 }
@@ -4027,7 +4020,9 @@ static void SetNewMoveTypeIcon(void)
     else
     {
         if (sMonSummaryScreen->currPageIndex == PSS_PAGE_BATTLE_MOVES)
-            SetTypeSpritePosAndPal(gBattleMoves[sMonSummaryScreen->newMove].type, 85, 96, SPRITE_ARR_ID_TYPE + 4);
+            SetTypeSpritePosAndPal(sMonSummaryScreen->newMove == MOVE_HIDDEN_POWER ? GetMonHiddenPowerType(&sMonSummaryScreen->currentMon)
+                                                                                    : gBattleMoves[sMonSummaryScreen->newMove].type,
+                                   85, 96, SPRITE_ARR_ID_TYPE + 4);
         else
             SetTypeSpritePosAndPal(NUMBER_OF_MON_TYPES + gContestMoves[sMonSummaryScreen->newMove].contestCategory, 85, 96, SPRITE_ARR_ID_TYPE + 4);
     }

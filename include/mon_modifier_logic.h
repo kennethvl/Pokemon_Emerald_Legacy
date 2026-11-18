@@ -26,6 +26,9 @@ unsigned char ModLogic_StatNature(unsigned int personality, unsigned char stored
 unsigned char ModLogic_HiddenPowerType(const unsigned char *ivs, unsigned char storedTypeField,
                                        unsigned char numTypes, unsigned char mysteryType);
 unsigned char ModLogic_HiddenPowerTypeFromIVs(const unsigned char *ivs, unsigned char numTypes, unsigned char mysteryType);
+// Hidden Power's power comes from the IVs and ranges from MODLOGIC_HP_MIN_POWER to MODLOGIC_HP_MAX_POWER.
+#define MODLOGIC_HP_MIN_POWER 80
+#define MODLOGIC_HP_MAX_POWER 120
 unsigned char ModLogic_HiddenPowerPowerFromIVs(const unsigned char *ivs);
 
 // --- Hyper Training ----------------------------------------------------------------------------

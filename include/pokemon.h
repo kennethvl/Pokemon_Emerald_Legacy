@@ -485,6 +485,7 @@ u8 GetNature(struct Pokemon *mon);
 u8 GetNatureFromPersonality(u32 personality);
 u8 GetMonStatNature(struct Pokemon *mon);
 u8 GetMonHiddenPowerType(struct Pokemon *mon);
+u8 GetMonHiddenPowerPower(struct Pokemon *mon);
 u16 GetEvolutionTargetSpecies(struct Pokemon *mon, u8 type, u16 evolutionItem);
 u16 HoennPokedexNumToSpecies(u16 hoennNum);
 u16 NationalPokedexNumToSpecies(u16 nationalNum);

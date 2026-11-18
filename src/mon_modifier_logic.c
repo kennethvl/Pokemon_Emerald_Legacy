@@ -47,7 +47,7 @@ unsigned char ModLogic_HiddenPowerPowerFromIVs(const unsigned char *ivs)
                             | ((ivs[4] & 2) << 3)
                             | ((ivs[5] & 2) << 4);
 
-    return (40 * powerBits) / 63 + 30;
+    return ((MODLOGIC_HP_MAX_POWER - MODLOGIC_HP_MIN_POWER) * powerBits) / 63 + MODLOGIC_HP_MIN_POWER;
 }
 
 unsigned char ModLogic_HiddenPowerType(const unsigned char *ivs, unsigned char storedTypeField,

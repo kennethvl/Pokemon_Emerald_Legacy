@@ -88,11 +88,28 @@ static void TestHiddenPower(void)
     CHECK_EQ(ModLogic_HiddenPowerType(all31, 0, NUM_TYPES, TYPE_MYSTERY), T_DARK);
 
     // Power comes from IVs only and is unaffected by any type override.
-    CHECK_EQ(ModLogic_HiddenPowerPowerFromIVs(all31), 70);
-    CHECK_EQ(ModLogic_HiddenPowerPowerFromIVs(all30), 70);
+    CHECK_EQ(ModLogic_HiddenPowerPowerFromIVs(all31), 120);
+    CHECK_EQ(ModLogic_HiddenPowerPowerFromIVs(all30), 120);
     {
         const unsigned char zero[6] = {0, 0, 0, 0, 0, 0};
-        CHECK_EQ(ModLogic_HiddenPowerPowerFromIVs(zero), 30);
+        unsigned int bits;
+        unsigned char lowest = 255, highest = 0;
+
+        CHECK_EQ(ModLogic_HiddenPowerPowerFromIVs(zero), 80);
+        // Across every IV combination the power stays within 80-120 and both ends are reachable.
+        for (bits = 0; bits < 64; bits++)
+        {
+            unsigned char ivs[6], power;
+            int i;
+            for (i = 0; i < 6; i++)
+                ivs[i] = ((bits >> i) & 1) << 1; // only the second-lowest bit matters for power
+            power = ModLogic_HiddenPowerPowerFromIVs(ivs);
+            CHECK_EQ(power >= 80 && power <= 120, 1);
+            if (power < lowest) lowest = power;
+            if (power > highest) highest = power;
+        }
+        CHECK_EQ(lowest, 80);
+        CHECK_EQ(highest, 120);
     }
 }
 

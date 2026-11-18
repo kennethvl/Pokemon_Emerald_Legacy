@@ -8879,14 +8879,7 @@ static void Cmd_recoverbasedonsunlight(void)
 
 static void Cmd_hiddenpowercalc(void)
 {
-    u8 powerBits = ((gBattleMons[gBattlerAttacker].hpIV & 2) >> 1)
-                 | ((gBattleMons[gBattlerAttacker].attackIV & 2) << 0)
-                 | ((gBattleMons[gBattlerAttacker].defenseIV & 2) << 1)
-                 | ((gBattleMons[gBattlerAttacker].speedIV & 2) << 2)
-                 | ((gBattleMons[gBattlerAttacker].spAttackIV & 2) << 3)
-                 | ((gBattleMons[gBattlerAttacker].spDefenseIV & 2) << 4);
-
-    gDynamicBasePower = (40 * powerBits) / 63 + 30;
+    gDynamicBasePower = GetBattlerHiddenPowerPower(gBattlerAttacker); // 80-120, from the IVs
 
     // The type comes from the IVs unless Mom set a Hidden Power type for this Pokémon.
     gBattleStruct->dynamicMoveType = GetBattlerHiddenPowerType(gBattlerAttacker);
