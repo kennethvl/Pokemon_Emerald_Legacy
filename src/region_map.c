@@ -1645,10 +1645,10 @@ bool32 IsEventIslandMapSecId(u8 mapSecId)
 }
 
 // Where to go if the player backs out of the Fly map. NULL = the party menu (the Fly move).
-static MainCallback sFlyMapCancelCallback = NULL;
+static EWRAM_DATA MainCallback sFlyMapCancelCallback = NULL;
 
 // True while the Fly map was opened from a Town Map: the warp is then instant (no Fly animation).
-static bool8 sFlyMapFromTownMap = FALSE;
+static EWRAM_DATA bool8 sFlyMapFromTownMap = FALSE;
 
 // The Elite Four and Champion rooms (and the corridors and Hall of Fame between them) cannot be left early.
 static bool8 IsInLeagueChallengeMap(void)

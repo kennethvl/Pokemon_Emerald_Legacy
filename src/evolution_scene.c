@@ -54,18 +54,19 @@ void (*gCB2_AfterEvolution)(void);
 // Level the evolving mon had before the level-ups that triggered this evolution. After evolving,
 // the new form is offered every move it learns in (start level, current level], so moves skipped
 // by a multi-level gain are not lost. Reset after each scene so other evolutions are unaffected.
-static u8 sEvoMoveFromLevel = EVOLOGIC_NO_RANGE;
+// Stored XOR EVOLOGIC_NO_RANGE so the zeroed EWRAM it starts in reads as "no range".
+static EWRAM_DATA u8 sEvoMoveFromLevelXor = 0;
 
 void SetEvolutionMoveFromLevel(u8 level)
 {
-    sEvoMoveFromLevel = level;
+    sEvoMoveFromLevelXor = level ^ EVOLOGIC_NO_RANGE;
 }
 
 static u16 EvoSceneTryLearnMove(struct Pokemon *mon, bool8 firstMove)
 {
     u8 level = GetMonData(mon, MON_DATA_LEVEL);
 
-    return MonTryLearningNewMoveInRange(mon, EvoLogic_MoveRangeStart(sEvoMoveFromLevel, level), level, firstMove);
+    return MonTryLearningNewMoveInRange(mon, EvoLogic_MoveRangeStart(sEvoMoveFromLevelXor ^ EVOLOGIC_NO_RANGE, level), level, firstMove);
 }
 
 #define sEvoCursorPos           gBattleCommunication[1] // when learning a new move
@@ -835,7 +836,7 @@ static void Task_EvolutionScene(u8 taskId)
             FreeMonSpritesGfx();
             FREE_AND_SET_NULL(sEvoStructPtr);
             FreeAllWindowBuffers();
-            sEvoMoveFromLevel = EVOLOGIC_NO_RANGE;
+            sEvoMoveFromLevelXor = 0;
             SetMainCallback2(gCB2_AfterEvolution);
         }
         break;
@@ -1231,7 +1232,7 @@ static void Task_TradeEvolutionScene(u8 taskId)
             DestroyTask(taskId);
             FREE_AND_SET_NULL(sEvoStructPtr);
             gTextFlags.useAlternateDownArrow = FALSE;
-            sEvoMoveFromLevel = EVOLOGIC_NO_RANGE;
+            sEvoMoveFromLevelXor = 0;
             SetMainCallback2(gCB2_AfterEvolution);
         }
         break;

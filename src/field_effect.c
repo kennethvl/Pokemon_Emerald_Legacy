@@ -1832,7 +1832,7 @@ static bool8 EscalatorWarpIn_End(struct Task *task)
 
 // When set, the next Surf / Waterfall / Dive field effect skips the "Pokémon shows up" part, so it works without
 // a Pokémon that knows the move (see StartSurfWithoutMon and friends). Consumed by the effect that starts next.
-static bool8 sFieldMoveWithoutMon = FALSE;
+static EWRAM_DATA bool8 sFieldMoveWithoutMon = FALSE;
 
 void StartSurfWithoutMon(void)
 {

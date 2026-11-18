@@ -415,7 +415,7 @@ static bool32 AnyMonHasRibbon(void)
     return FALSE;
 }
 
-static bool8 sOpenFlyMapAfterPokenav = FALSE;
+static EWRAM_DATA bool8 sOpenFlyMapAfterPokenav = FALSE;
 
 // Called when MAP is chosen in the PokéNav main menu. If Fly could be used here (and the PokéNav was opened
 // normally, not by a script), asks the PokéNav to shut down and open the Fly map. Returns TRUE if so.
