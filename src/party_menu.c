@@ -4400,12 +4400,138 @@ static bool8 ExecuteTableBasedItemEffect_(u8 partyMonIndex, u16 item, u8 monMove
         return ExecuteTableBasedItemEffect(&gPlayerParty[partyMonIndex], item, partyMonIndex, monMoveIndex);
 }
 
+// ---- Bulk use of vitamins and EV-reducing berries ----
+// After choosing the Pokémon, the player picks how many to use at once (up to what still has an effect and what
+// is in the bag), so there is no need to go back and forth.
+#define BULK_MAX_USES 99
+
+static EWRAM_DATA u16 sBulkMax = 0;
+static EWRAM_DATA u16 sBulkCount = 1;
+static EWRAM_DATA bool8 sBulkChosen = FALSE;
+static EWRAM_DATA TaskFunc sBulkTask = NULL;
+static EWRAM_DATA void (*sBulkUseCB)(u8, TaskFunc) = NULL;
+
+static const u8 sText_BulkHowMany[] = _("How many?\n×");
+static const u8 sText_BulkMax[] = _("\nMAX ");
+
+static bool8 IsBulkEVItem(u16 item)
+{
+    u8 effectType = GetItemEffectType(item);
+
+    return effectType >= ITEM_EFFECT_ATK_EV && effectType <= ITEM_EFFECT_DEF_EV;
+}
+
+// How many times the item still has an effect on the selected Pokémon (tried on a copy), capped by the bag.
+static u16 CountBulkUses(u16 item, bool8 reducesEV)
+{
+    struct Pokemon tmp = gPlayerParty[gPartyMenu.slotId];
+    u8 effectType = GetItemEffectType(item);
+    u16 limit = CountTotalItemQuantityInBag(item);
+    u16 n = 0;
+
+    if (limit > BULK_MAX_USES)
+        limit = BULK_MAX_USES;
+    if (!reducesEV && NotUsingHPEVItemOnShedinja(&tmp, item) == FALSE)
+        return 0;
+
+    while (n < limit)
+    {
+        u16 friendship = GetMonData(&tmp, MON_DATA_FRIENDSHIP);
+        u16 ev = ItemEffectToMonEv(&tmp, effectType);
+
+        if (ExecuteTableBasedItemEffect(&tmp, item, gPartyMenu.slotId, 0))
+            break;
+        if (reducesEV && friendship == GetMonData(&tmp, MON_DATA_FRIENDSHIP) && ev == ItemEffectToMonEv(&tmp, effectType))
+            break;
+        n++;
+    }
+    return n;
+}
+
+static void PrintBulkQuantityWindow(void)
+{
+    u8 win = sPartyMenuInternal->windowId[0];
+    u8 *str;
+
+    FillWindowPixelBuffer(win, PIXEL_FILL(1));
+    str = StringCopy(gStringVar4, sText_BulkHowMany);
+    str = ConvertIntToDecimalStringN(str, sBulkCount, STR_CONV_MODE_LEFT_ALIGN, 2);
+    str = StringCopy(str, sText_BulkMax);
+    ConvertIntToDecimalStringN(str, sBulkMax, STR_CONV_MODE_LEFT_ALIGN, 2);
+    AddTextPrinterParameterized2(win, FONT_NORMAL, gStringVar4, TEXT_SKIP_DRAW, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+    CopyWindowToVram(win, COPYWIN_GFX);
+    ScheduleBgCopyTilemapToVram(2);
+}
+
+static void Task_BulkQuantityInput(u8 taskId)
+{
+    if (JOY_REPEAT(DPAD_UP))
+    {
+        sBulkCount = (sBulkCount >= sBulkMax) ? 1 : sBulkCount + 1;
+        PlaySE(SE_SELECT);
+        PrintBulkQuantityWindow();
+    }
+    else if (JOY_REPEAT(DPAD_DOWN))
+    {
+        sBulkCount = (sBulkCount <= 1) ? sBulkMax : sBulkCount - 1;
+        PlaySE(SE_SELECT);
+        PrintBulkQuantityWindow();
+    }
+    else if (JOY_REPEAT(DPAD_RIGHT))
+    {
+        sBulkCount = (sBulkCount + 10 > sBulkMax) ? sBulkMax : sBulkCount + 10;
+        PlaySE(SE_SELECT);
+        PrintBulkQuantityWindow();
+    }
+    else if (JOY_REPEAT(DPAD_LEFT))
+    {
+        sBulkCount = (sBulkCount <= 10) ? 1 : sBulkCount - 10;
+        PlaySE(SE_SELECT);
+        PrintBulkQuantityWindow();
+    }
+    else if (JOY_NEW(A_BUTTON))
+    {
+        PlaySE(SE_SELECT);
+        RemoveLevelUpStatsWindow();
+        sBulkChosen = TRUE;
+        sBulkUseCB(taskId, sBulkTask);
+    }
+    else if (JOY_NEW(B_BUTTON))
+    {
+        PlaySE(SE_SELECT);
+        RemoveLevelUpStatsWindow();
+        gTasks[taskId].func = Task_ReturnToChooseMonAfterText;
+    }
+}
+
+// Opens the quantity prompt if more than one use would have an effect. Returns TRUE if the prompt was opened.
+static bool8 TryOpenBulkQuantityPrompt(u8 taskId, TaskFunc task, void (*useCB)(u8, TaskFunc), bool8 reducesEV)
+{
+    u16 max = CountBulkUses(gSpecialVar_ItemId, reducesEV);
+
+    if (max <= 1)
+        return FALSE;
+    sBulkMax = max;
+    sBulkCount = 1; // pressing Down from 1 jumps to the maximum
+    sBulkTask = task;
+    sBulkUseCB = useCB;
+    CreateLevelUpStatsWindow();
+    PrintBulkQuantityWindow();
+    gTasks[taskId].func = Task_BulkQuantityInput;
+    return TRUE;
+}
+
 void ItemUseCB_Medicine(u8 taskId, TaskFunc task)
 {
     u16 hp = 0;
     struct Pokemon *mon = &gPlayerParty[gPartyMenu.slotId];
     u16 item = gSpecialVar_ItemId;
     bool8 canHeal, cannotUse;
+    u16 uses = 1;
+
+    if (!sBulkChosen && gPartyMenu.menuType == PARTY_MENU_TYPE_FIELD && IsBulkEVItem(item)
+     && TryOpenBulkQuantityPrompt(taskId, task, ItemUseCB_Medicine, FALSE))
+        return;
 
     if (NotUsingHPEVItemOnShedinja(mon, item) == FALSE)
     {
@@ -4426,7 +4552,18 @@ void ItemUseCB_Medicine(u8 taskId, TaskFunc task)
                 canHeal = FALSE;
         }
         cannotUse = ExecuteTableBasedItemEffect_(gPartyMenu.slotId, item, 0);
+        // Bulk use: keep using the item (it stops once it has no more effect or the bag runs out)
+        if (cannotUse == FALSE && sBulkChosen)
+        {
+            while (uses < sBulkCount && CheckBagHasItem(item, uses + 1))
+            {
+                if (ExecuteTableBasedItemEffect_(gPartyMenu.slotId, item, 0))
+                    break;
+                uses++;
+            }
+        }
     }
+    sBulkChosen = FALSE;
 
     if (cannotUse != FALSE)
     {
@@ -4447,7 +4584,7 @@ void ItemUseCB_Medicine(u8 taskId, TaskFunc task)
         {
             PlaySE(SE_USE_ITEM);
             if (gPartyMenu.action != PARTY_ACTION_REUSABLE_ITEM)
-                RemoveBagItem(item, 1);
+                RemoveBagItem(item, uses);
         }
         else
         {
@@ -4506,11 +4643,41 @@ void ItemUseCB_ReduceEV(u8 taskId, TaskFunc task)
     struct Pokemon *mon = &gPlayerParty[gPartyMenu.slotId];
     u16 item = gSpecialVar_ItemId;
     u8 effectType = GetItemEffectType(item);
-    u16 friendship = GetMonData(mon, MON_DATA_FRIENDSHIP);
-    u16 ev = ItemEffectToMonEv(mon, effectType);
-    bool8 cannotUseEffect = ExecuteTableBasedItemEffect_(gPartyMenu.slotId, item, 0);
-    u16 newFriendship = GetMonData(mon, MON_DATA_FRIENDSHIP);
-    u16 newEv = ItemEffectToMonEv(mon, effectType);
+    u16 friendship;
+    u16 ev;
+    bool8 cannotUseEffect;
+    u16 newFriendship;
+    u16 newEv;
+    u16 uses = 1;
+
+    if (!sBulkChosen && gPartyMenu.menuType == PARTY_MENU_TYPE_FIELD
+     && TryOpenBulkQuantityPrompt(taskId, task, ItemUseCB_ReduceEV, TRUE))
+        return;
+
+    friendship = GetMonData(mon, MON_DATA_FRIENDSHIP);
+    ev = ItemEffectToMonEv(mon, effectType);
+    cannotUseEffect = ExecuteTableBasedItemEffect_(gPartyMenu.slotId, item, 0);
+    newFriendship = GetMonData(mon, MON_DATA_FRIENDSHIP);
+    newEv = ItemEffectToMonEv(mon, effectType);
+
+    // Bulk use: keep eating berries while they still have an effect
+    if (sBulkChosen && !cannotUseEffect && !(friendship == newFriendship && ev == newEv))
+    {
+        while (uses < sBulkCount && CheckBagHasItem(item, uses + 1))
+        {
+            u16 prevFriendship = GetMonData(mon, MON_DATA_FRIENDSHIP);
+            u16 prevEv = ItemEffectToMonEv(mon, effectType);
+
+            if (ExecuteTableBasedItemEffect_(gPartyMenu.slotId, item, 0))
+                break;
+            if (prevFriendship == GetMonData(mon, MON_DATA_FRIENDSHIP) && prevEv == ItemEffectToMonEv(mon, effectType))
+                break;
+            uses++;
+        }
+        newFriendship = GetMonData(mon, MON_DATA_FRIENDSHIP);
+        newEv = ItemEffectToMonEv(mon, effectType);
+    }
+    sBulkChosen = FALSE;
 
     if (cannotUseEffect || (friendship == newFriendship && ev == newEv))
     {
@@ -4518,13 +4685,16 @@ void ItemUseCB_ReduceEV(u8 taskId, TaskFunc task)
         PlaySE(SE_SELECT);
         DisplayPartyMenuMessage(gText_WontHaveEffect, TRUE);
         ScheduleBgCopyTilemapToVram(2);
-        gTasks[taskId].func = task;
+        if (gPartyMenu.menuType == PARTY_MENU_TYPE_FIELD)
+            gTasks[taskId].func = Task_ReturnToChooseMonAfterText;
+        else
+            gTasks[taskId].func = task;
     }
     else
     {
         gPartyMenuUseExitCallback = TRUE;
         PlaySE(SE_USE_ITEM);
-        RemoveBagItem(item, 1);
+        RemoveBagItem(item, uses);
         GetMonNickname(mon, gStringVar1);
         ItemEffectToStatString(effectType, gStringVar2);
         if (friendship != newFriendship)
@@ -4540,7 +4710,11 @@ void ItemUseCB_ReduceEV(u8 taskId, TaskFunc task)
         }
         DisplayPartyMenuMessage(gStringVar4, TRUE);
         ScheduleBgCopyTilemapToVram(2);
-        gTasks[taskId].func = task;
+        // Stay in the party menu while there are more berries (like vitamins and Rare Candy)
+        if (gPartyMenu.menuType == PARTY_MENU_TYPE_FIELD && CheckBagHasItem(item, 1))
+            gTasks[taskId].func = Task_ReturnToChooseMonAfterText;
+        else
+            gTasks[taskId].func = task;
     }
 }
 
