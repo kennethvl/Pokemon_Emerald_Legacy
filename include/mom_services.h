@@ -6,6 +6,8 @@
 void MomCanModifyPartyMon(void);
 void MomBufferHyperTraining(void);
 void MomApplyHyperTraining(void);
+void MomBufferAbilityChange(void);
+void MomApplyAbilityChange(void);
 void MomPayForService(void);
 
 #endif // GUARD_MOM_SERVICES_H

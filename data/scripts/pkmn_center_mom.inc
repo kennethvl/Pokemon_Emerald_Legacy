@@ -78,8 +78,30 @@ PokemonCenter_EventScript_MomNature::
 	goto PokemonCenter_EventScript_MomNotReady
 	end
 
+@ ---- Ability change: switch between the species' two abilities (like an Ability Capsule) ----
 PokemonCenter_EventScript_MomAbility::
-	goto PokemonCenter_EventScript_MomNotReady
+	msgbox PokemonCenter_Text_MomWhichMon, MSGBOX_DEFAULT
+	special ChoosePartyMon
+	waitstate
+	goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, PokemonCenter_EventScript_MomMenu
+	special MomCanModifyPartyMon
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomCantModifyEgg
+	special MomBufferAbilityChange
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomOnlyOneAbility
+	msgbox PokemonCenter_Text_MomAbilityConfirm, MSGBOX_YESNO
+	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomMenu
+	special MomPayForService
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomNotEnoughMoney
+	special MomApplyAbilityChange
+	playfanfare MUS_LEVEL_UP
+	msgbox PokemonCenter_Text_MomAbilityDone, MSGBOX_DEFAULT
+	waitfanfare
+	goto PokemonCenter_EventScript_MomMenu
+	end
+
+PokemonCenter_EventScript_MomOnlyOneAbility::
+	msgbox PokemonCenter_Text_MomOnlyOneAbility, MSGBOX_DEFAULT
+	goto PokemonCenter_EventScript_MomMenu
 	end
 
 PokemonCenter_EventScript_MomHiddenPower::
@@ -140,3 +162,16 @@ PokemonCenter_Text_MomHyperDone:
 PokemonCenter_Text_MomHyperAlreadyPerfect:
 	.string "That's already as strong as it\n"
 	.string "can be, dear!$"
+
+PokemonCenter_Text_MomOnlyOneAbility:
+	.string "Oh, that POKéMON has just the one\n"
+	.string "ability. There's nothing to switch.$"
+
+PokemonCenter_Text_MomAbilityConfirm:
+	.string "I can switch {STR_VAR_2} for\n"
+	.string "{STR_VAR_3}. That's ¥{STR_VAR_1}.\p"
+	.string "Is that all right?$"
+
+PokemonCenter_Text_MomAbilityDone:
+	.string "All done! Its ability is now\n"
+	.string "{STR_VAR_3}, dear!$"

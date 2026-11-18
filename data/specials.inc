@@ -546,4 +546,6 @@ gSpecials::
 	def_special MomCanModifyPartyMon
 	def_special MomBufferHyperTraining
 	def_special MomApplyHyperTraining
+	def_special MomBufferAbilityChange
+	def_special MomApplyAbilityChange
 	def_special MomPayForService

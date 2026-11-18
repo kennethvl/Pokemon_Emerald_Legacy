@@ -5,6 +5,8 @@
 #include "mon_modifier_logic.h"
 #include "pokemon.h"
 #include "string_util.h"
+#include "battle_main.h"
+#include "constants/abilities.h"
 #include "constants/pkmn_center_mom.h"
 
 // Party Pokémon the service is applied to: VAR_0x8004 (set by the ChoosePartyMon special).
@@ -106,6 +108,42 @@ void MomApplyHyperTraining(void)
         SetMonData(mon, sHyperTrainingMonData[gSpecialVar_0x8005], &maxIV);
     }
     CalculateMonStats(mon);
+}
+
+// The ability slot (0 or 1) the Pokémon currently uses; falls back to slot 0 if its species has no ability in slot 1.
+static u8 GetCurrentAbilitySlot(struct Pokemon *mon, u16 species)
+{
+    u8 slot = GetMonData(mon, MON_DATA_ABILITY_NUM) ? 1 : 0;
+
+    if (gSpeciesInfo[species].abilities[slot] == ABILITY_NONE)
+        slot = 0;
+    return slot;
+}
+
+// Input: VAR_0x8004 = party slot. Output: VAR_RESULT = TRUE if the species has two different abilities to swap
+// between (like the Ability Capsule). Buffers the price (STR_VAR_1), current (STR_VAR_2) and new (STR_VAR_3)
+// ability names, and sets VAR_0x8006 to the price.
+void MomBufferAbilityChange(void)
+{
+    struct Pokemon *mon = SERVICE_MON;
+    u16 species = GetMonData(mon, MON_DATA_SPECIES);
+    u8 slot = GetCurrentAbilitySlot(mon, species);
+    u8 otherSlot = ModLogic_OtherAbilitySlot(slot);
+
+    ConvertIntToDecimalStringN(gStringVar1, MOM_SERVICE_PRICE, STR_CONV_MODE_LEFT_ALIGN, 5);
+    StringCopy(gStringVar2, gAbilityNames[gSpeciesInfo[species].abilities[slot]]);
+    StringCopy(gStringVar3, gAbilityNames[gSpeciesInfo[species].abilities[otherSlot]]);
+    gSpecialVar_0x8006 = MOM_SERVICE_PRICE;
+    gSpecialVar_Result = ModLogic_CanSwapAbility(gSpeciesInfo[species].abilities[0], gSpeciesInfo[species].abilities[1]);
+}
+
+// Switches the Pokémon to its other ability.
+void MomApplyAbilityChange(void)
+{
+    struct Pokemon *mon = SERVICE_MON;
+    u8 newSlot = ModLogic_OtherAbilitySlot(GetCurrentAbilitySlot(mon, GetMonData(mon, MON_DATA_SPECIES)));
+
+    SetMonData(mon, MON_DATA_ABILITY_NUM, &newSlot);
 }
 
 // Charges VAR_0x8006 money. VAR_RESULT = TRUE if the player could pay (and was charged).
