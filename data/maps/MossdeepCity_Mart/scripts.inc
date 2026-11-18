@@ -36,6 +36,14 @@ MossdeepCity_Mart_Pokemart:
 	.2byte ITEM_REVIVE
 	.2byte ITEM_MAX_REPEL
 	.2byte ITEM_ETHER
+	.2byte ITEM_POKE_BALL
+	.2byte ITEM_GREAT_BALL
+	.2byte ITEM_MASTER_BALL
+	.2byte ITEM_PREMIER_BALL
+	.2byte ITEM_LUXURY_BALL
+	.2byte ITEM_NEST_BALL
+	.2byte ITEM_REPEAT_BALL
+	.2byte ITEM_TIMER_BALL
 	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
@@ -53,6 +61,14 @@ MossdeepCity_Mart_Pokemart_PostGame:
 	.2byte ITEM_ETHER
 	.2byte ITEM_TWISTED_SPOON
 	.2byte ITEM_NEVER_MELT_ICE
+	.2byte ITEM_POKE_BALL
+	.2byte ITEM_GREAT_BALL
+	.2byte ITEM_MASTER_BALL
+	.2byte ITEM_PREMIER_BALL
+	.2byte ITEM_LUXURY_BALL
+	.2byte ITEM_NEST_BALL
+	.2byte ITEM_REPEAT_BALL
+	.2byte ITEM_TIMER_BALL
 	.2byte ITEM_LUCKY_EGG
 	.2byte ITEM_NONE
 	release
