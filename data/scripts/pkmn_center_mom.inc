@@ -74,8 +74,39 @@ PokemonCenter_EventScript_MomNotEnoughMoney::
 	goto PokemonCenter_EventScript_MomMenu
 	end
 
+@ ---- Nature change: changes how stats grow (like a Mint); the real nature is kept ----
 PokemonCenter_EventScript_MomNature::
-	goto PokemonCenter_EventScript_MomNotReady
+	msgbox PokemonCenter_Text_MomWhichMon, MSGBOX_DEFAULT
+	special ChoosePartyMon
+	waitstate
+	goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, PokemonCenter_EventScript_MomMenu
+	special MomCanModifyPartyMon
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomCantModifyEgg
+	message PokemonCenter_Text_MomWhichNature
+	waitmessage
+	copyvar VAR_0x8007, VAR_0x8004
+	setvar VAR_0x8004, SCROLL_MULTI_MOM_NATURES
+	special ShowScrollableMultichoice
+	waitstate
+	copyvar VAR_0x8004, VAR_0x8007
+	goto_if_eq VAR_RESULT, MULTI_B_PRESSED, PokemonCenter_EventScript_MomMenu
+	copyvar VAR_0x8005, VAR_RESULT
+	special MomBufferNatureChange
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomSameNature
+	msgbox PokemonCenter_Text_MomNatureConfirm, MSGBOX_YESNO
+	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomMenu
+	special MomPayForService
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomNotEnoughMoney
+	special MomApplyNatureChange
+	playfanfare MUS_LEVEL_UP
+	msgbox PokemonCenter_Text_MomNatureDone, MSGBOX_DEFAULT
+	waitfanfare
+	goto PokemonCenter_EventScript_MomMenu
+	end
+
+PokemonCenter_EventScript_MomSameNature::
+	msgbox PokemonCenter_Text_MomSameNature, MSGBOX_DEFAULT
+	goto PokemonCenter_EventScript_MomMenu
 	end
 
 @ ---- Ability change: switch between the species' two abilities (like an Ability Capsule) ----
@@ -175,3 +206,19 @@ PokemonCenter_Text_MomAbilityConfirm:
 PokemonCenter_Text_MomAbilityDone:
 	.string "All done! Its ability is now\n"
 	.string "{STR_VAR_3}, dear!$"
+
+PokemonCenter_Text_MomWhichNature:
+	.string "Which nature would you like?$"
+
+PokemonCenter_Text_MomNatureConfirm:
+	.string "Its stats will grow like a\n"
+	.string "{STR_VAR_3} POKéMON, not {STR_VAR_2}.\p"
+	.string "That's ¥{STR_VAR_1}. Is that all right?$"
+
+PokemonCenter_Text_MomNatureDone:
+	.string "All done! Its stats now follow the\n"
+	.string "{STR_VAR_3} nature, dear!$"
+
+PokemonCenter_Text_MomSameNature:
+	.string "Oh, its stats already follow that\n"
+	.string "nature, dear!$"

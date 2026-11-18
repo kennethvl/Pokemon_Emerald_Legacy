@@ -8,6 +8,11 @@ void MomBufferHyperTraining(void);
 void MomApplyHyperTraining(void);
 void MomBufferAbilityChange(void);
 void MomApplyAbilityChange(void);
+void MomBufferNatureChange(void);
+void MomApplyNatureChange(void);
 void MomPayForService(void);
+
+// Text of option `index` of the runtime-built scrollable multichoice lists (SCROLL_MULTI_MOM_*).
+const u8 *MomGetScrollOptionText(u8 scrollId, u8 index);
 
 #endif // GUARD_MOM_SERVICES_H

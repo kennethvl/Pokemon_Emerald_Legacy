@@ -1,5 +1,6 @@
 #include "global.h"
 #include "malloc.h"
+#include "mom_services.h"
 #include "battle.h"
 #include "battle_tower.h"
 #include "cable_club.h"
@@ -2421,6 +2422,16 @@ void ShowScrollableMultichoice(void)
         task->tKeepOpenAfterSelect = FALSE;
         task->tTaskId = taskId;
         break;
+    case SCROLL_MULTI_MOM_NATURES:
+        task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;
+        task->tNumItems = NUM_NATURES;
+        task->tLeft = 1;
+        task->tTop = 1;
+        task->tWidth = 16;
+        task->tHeight = 12;
+        task->tKeepOpenAfterSelect = FALSE;
+        task->tTaskId = taskId;
+        break;
     case SCROLL_MULTI_BATTLE_TENT_RULES:
         task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;
         task->tNumItems = 7;
@@ -2611,6 +2622,14 @@ static const u8 *const sScrollableMultichoiceOptions[][MAX_SCROLL_MULTI_LENGTH] 
     }
 };
 
+// Options of Mom's lists are built at runtime (see mom_services.c); all others are in the table above.
+static const u8 *GetScrollableMultichoiceText(u8 scrollId, u8 index)
+{
+    if (scrollId == SCROLL_MULTI_MOM_NATURES)
+        return MomGetScrollOptionText(scrollId, index);
+    return sScrollableMultichoiceOptions[scrollId][index];
+}
+
 static void Task_ShowScrollableMultichoice(u8 taskId)
 {
     u32 width;
@@ -2629,7 +2648,7 @@ static void Task_ShowScrollableMultichoice(u8 taskId)
 
     for (width = 0, i = 0; i < task->tNumItems; i++)
     {
-        const u8 *text = sScrollableMultichoiceOptions[gSpecialVar_0x8004][i];
+        const u8 *text = GetScrollableMultichoiceText(gSpecialVar_0x8004, i);
         sScrollableMultichoice_ListMenuItem[i].name = text;
         sScrollableMultichoice_ListMenuItem[i].id = i;
         width = DisplayTextAndGetWidth(text, width);

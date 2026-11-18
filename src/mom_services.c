@@ -5,8 +5,11 @@
 #include "mon_modifier_logic.h"
 #include "pokemon.h"
 #include "string_util.h"
+#include "strings.h"
 #include "battle_main.h"
+#include "pokemon_summary_screen.h"
 #include "constants/abilities.h"
+#include "constants/field_specials.h"
 #include "constants/pkmn_center_mom.h"
 
 // Party Pokémon the service is applied to: VAR_0x8004 (set by the ChoosePartyMon special).
@@ -144,6 +147,90 @@ void MomApplyAbilityChange(void)
     u8 newSlot = ModLogic_OtherAbilitySlot(GetCurrentAbilitySlot(mon, GetMonData(mon, MON_DATA_SPECIES)));
 
     SetMonData(mon, MON_DATA_ABILITY_NUM, &newSlot);
+}
+
+// ---- Nature change (stats only, like a Mint) ----
+
+static const u8 sText_NatureUp[] = _(" +");
+static const u8 sText_NatureDown[] = _(" -");
+static const u8 sText_NatureNeutral[] = _(" (neutral)");
+static const u8 sText_StatAtk[] = _("ATK");
+static const u8 sText_StatDef[] = _("DEF");
+static const u8 sText_StatSpeed[] = _("SPEED");
+static const u8 sText_StatSpAtk[] = _("SP.ATK");
+static const u8 sText_StatSpDef[] = _("SP.DEF");
+static const u8 *const sNatureStatNames[NUM_NATURE_STATS] =
+{
+    sText_StatAtk,
+    sText_StatDef,
+    sText_StatSpeed,
+    sText_StatSpAtk,
+    sText_StatSpDef,
+};
+
+static EWRAM_DATA u8 sNatureOptionText[NUM_NATURES][32] = {0};
+
+// "ADAMANT +ATK -SP.ATK" style label so the player can see what each nature does.
+static void BuildNatureOptionText(u8 nature)
+{
+    u8 *str = StringCopy(sNatureOptionText[nature], gNatureNamePointers[nature]);
+    u8 stat, up = NUM_NATURE_STATS, down = NUM_NATURE_STATS;
+
+    for (stat = 0; stat < NUM_NATURE_STATS; stat++)
+    {
+        if (gNatureStatTable[nature][stat] > 0)
+            up = stat;
+        else if (gNatureStatTable[nature][stat] < 0)
+            down = stat;
+    }
+
+    if (up == NUM_NATURE_STATS)
+    {
+        StringCopy(str, sText_NatureNeutral);
+        return;
+    }
+    str = StringCopy(str, sText_NatureUp);
+    str = StringCopy(str, sNatureStatNames[up]);
+    str = StringCopy(str, sText_NatureDown);
+    StringCopy(str, sNatureStatNames[down]);
+}
+
+const u8 *MomGetScrollOptionText(u8 scrollId, u8 index)
+{
+    if (scrollId == SCROLL_MULTI_MOM_NATURES)
+    {
+        BuildNatureOptionText(index);
+        return sNatureOptionText[index];
+    }
+    return gText_EmptyString7;
+}
+
+// Inputs: VAR_0x8004 = party slot, VAR_0x8005 = chosen nature (list index).
+// Outputs: VAR_RESULT = TRUE if the nature would change; STR_VAR_1 = price, STR_VAR_2 = current stat nature,
+//          STR_VAR_3 = chosen nature; VAR_0x8006 = price.
+void MomBufferNatureChange(void)
+{
+    struct Pokemon *mon = SERVICE_MON;
+    u8 current = GetMonStatNature(mon);
+
+    ConvertIntToDecimalStringN(gStringVar1, MOM_SERVICE_PRICE, STR_CONV_MODE_LEFT_ALIGN, 5);
+    StringCopy(gStringVar2, gNatureNamePointers[current]);
+    StringCopy(gStringVar3, gNatureNamePointers[gSpecialVar_0x8005]);
+    gSpecialVar_0x8006 = MOM_SERVICE_PRICE;
+    gSpecialVar_Result = gSpecialVar_0x8005 != current;
+}
+
+// Sets the stat nature to the chosen one (VAR_0x8005). The Pokémon's real nature is untouched; choosing its
+// real nature simply removes the override.
+void MomApplyNatureChange(void)
+{
+    struct Pokemon *mon = SERVICE_MON;
+    u8 stored = ModLogic_EncodeOverride(gSpecialVar_0x8005);
+
+    if (gSpecialVar_0x8005 == GetNature(mon))
+        stored = MODLOGIC_NO_OVERRIDE;
+    SetMonData(mon, MON_DATA_NATURE_OVERRIDE, &stored);
+    CalculateMonStats(mon);
 }
 
 // Charges VAR_0x8006 money. VAR_RESULT = TRUE if the player could pay (and was charged).

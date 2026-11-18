@@ -548,4 +548,6 @@ gSpecials::
 	def_special MomApplyHyperTraining
 	def_special MomBufferAbilityChange
 	def_special MomApplyAbilityChange
+	def_special MomBufferNatureChange
+	def_special MomApplyNatureChange
 	def_special MomPayForService
