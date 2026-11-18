@@ -8,7 +8,6 @@ FortreeCity_PokemonCenter_1F_MapScripts::
 FortreeCity_PokemonCenter_1F_OnTransition:
 	setrespawn HEAL_LOCATION_FORTREE_CITY
 	call PokemonCenter_EventScript_UpdateMom
-	setflag FLAG_VISITED_FORTREE_POKEMON_CENTER
 	end
 
 FortreeCity_PokemonCenter_1F_EventScript_Nurse::

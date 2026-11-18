@@ -8,7 +8,6 @@ LilycoveCity_PokemonCenter_1F_MapScripts::
 LilycoveCity_PokemonCenter_1F_OnTransition:
 	setrespawn HEAL_LOCATION_LILYCOVE_CITY
 	call PokemonCenter_EventScript_UpdateMom
-	setflag FLAG_VISITED_LILYCOVE_POKEMON_CENTER
 	goto LilycoveCity_PokemonCenter_1F_EventScript_SetLilycoveLadyGfx
 	end
 

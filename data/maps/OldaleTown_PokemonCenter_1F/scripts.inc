@@ -8,7 +8,6 @@ OldaleTown_PokemonCenter_1F_MapScripts::
 OldaleTown_PokemonCenter_1F_OnTransition:
 	setrespawn HEAL_LOCATION_OLDALE_TOWN
 	call PokemonCenter_EventScript_UpdateMom
-	setflag FLAG_VISITED_OLDALE_POKEMON_CENTER
 	call Common_EventScript_UpdateBrineyLocation
 	end
 

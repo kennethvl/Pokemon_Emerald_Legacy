@@ -8,6 +8,9 @@
 #include "party_menu.h"
 #include "trig.h"
 #include "overworld.h"
+#include "safari_zone.h"
+#include "battle_pyramid.h"
+#include "battle_pike.h"
 #include "link.h"
 #include "event_data.h"
 #include "secret_base.h"
@@ -1169,32 +1172,6 @@ static void RegionMap_InitializeStateBasedOnSSTidalLocation(void)
     sRegionMap->cursorPosY = gRegionMapEntries[sRegionMap->mapSecId].y + y + MAPCURSOR_Y_MIN;
 }
 
-// The flag that must be set to fly to a city: having visited its Pokémon Center. Littleroot Town has no
-// Pokémon Center (the player's house is its heal location), so it keeps the "visited the town" flag.
-static u16 GetFlyDestinationFlag(u16 mapSecId)
-{
-    switch (mapSecId)
-    {
-    case MAPSEC_LITTLEROOT_TOWN:   return FLAG_VISITED_LITTLEROOT_TOWN;
-    case MAPSEC_OLDALE_TOWN:       return FLAG_VISITED_OLDALE_POKEMON_CENTER;
-    case MAPSEC_DEWFORD_TOWN:      return FLAG_VISITED_DEWFORD_POKEMON_CENTER;
-    case MAPSEC_LAVARIDGE_TOWN:    return FLAG_VISITED_LAVARIDGE_POKEMON_CENTER;
-    case MAPSEC_FALLARBOR_TOWN:    return FLAG_VISITED_FALLARBOR_POKEMON_CENTER;
-    case MAPSEC_VERDANTURF_TOWN:   return FLAG_VISITED_VERDANTURF_POKEMON_CENTER;
-    case MAPSEC_PACIFIDLOG_TOWN:   return FLAG_VISITED_PACIFIDLOG_POKEMON_CENTER;
-    case MAPSEC_PETALBURG_CITY:    return FLAG_VISITED_PETALBURG_POKEMON_CENTER;
-    case MAPSEC_SLATEPORT_CITY:    return FLAG_VISITED_SLATEPORT_POKEMON_CENTER;
-    case MAPSEC_MAUVILLE_CITY:     return FLAG_VISITED_MAUVILLE_POKEMON_CENTER;
-    case MAPSEC_RUSTBORO_CITY:     return FLAG_VISITED_RUSTBORO_POKEMON_CENTER;
-    case MAPSEC_FORTREE_CITY:      return FLAG_VISITED_FORTREE_POKEMON_CENTER;
-    case MAPSEC_LILYCOVE_CITY:     return FLAG_VISITED_LILYCOVE_POKEMON_CENTER;
-    case MAPSEC_MOSSDEEP_CITY:     return FLAG_VISITED_MOSSDEEP_POKEMON_CENTER;
-    case MAPSEC_SOOTOPOLIS_CITY:   return FLAG_VISITED_SOOTOPOLIS_POKEMON_CENTER;
-    case MAPSEC_EVER_GRANDE_CITY:  return FLAG_VISITED_EVER_GRANDE_POKEMON_CENTER;
-    default:                       return FLAG_VISITED_LITTLEROOT_TOWN;
-    }
-}
-
 static u8 GetMapsecType(u16 mapSecId)
 {
     switch (mapSecId)
@@ -1202,22 +1179,37 @@ static u8 GetMapsecType(u16 mapSecId)
     case MAPSEC_NONE:
         return MAPSECTYPE_NONE;
     case MAPSEC_LITTLEROOT_TOWN:
+        return FlagGet(FLAG_VISITED_LITTLEROOT_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_OLDALE_TOWN:
+        return FlagGet(FLAG_VISITED_OLDALE_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_DEWFORD_TOWN:
+        return FlagGet(FLAG_VISITED_DEWFORD_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_LAVARIDGE_TOWN:
+        return FlagGet(FLAG_VISITED_LAVARIDGE_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_FALLARBOR_TOWN:
+        return FlagGet(FLAG_VISITED_FALLARBOR_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_VERDANTURF_TOWN:
+        return FlagGet(FLAG_VISITED_VERDANTURF_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_PACIFIDLOG_TOWN:
+        return FlagGet(FLAG_VISITED_PACIFIDLOG_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_PETALBURG_CITY:
+        return FlagGet(FLAG_VISITED_PETALBURG_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_SLATEPORT_CITY:
+        return FlagGet(FLAG_VISITED_SLATEPORT_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_MAUVILLE_CITY:
+        return FlagGet(FLAG_VISITED_MAUVILLE_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_RUSTBORO_CITY:
+        return FlagGet(FLAG_VISITED_RUSTBORO_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_FORTREE_CITY:
+        return FlagGet(FLAG_VISITED_FORTREE_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_LILYCOVE_CITY:
+        return FlagGet(FLAG_VISITED_LILYCOVE_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_MOSSDEEP_CITY:
+        return FlagGet(FLAG_VISITED_MOSSDEEP_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_SOOTOPOLIS_CITY:
+        return FlagGet(FLAG_VISITED_SOOTOPOLIS_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_EVER_GRANDE_CITY:
-        return FlagGet(GetFlyDestinationFlag(mapSecId)) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+        return FlagGet(FLAG_VISITED_EVER_GRANDE_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     case MAPSEC_BATTLE_FRONTIER:
         return FlagGet(FLAG_LANDMARK_BATTLE_FRONTIER) ? MAPSECTYPE_BATTLE_FRONTIER : MAPSECTYPE_NONE;
     case MAPSEC_SOUTHERN_ISLAND:
@@ -1681,6 +1673,17 @@ static bool8 IsInLeagueChallengeMap(void)
     return FALSE;
 }
 
+// Places where leaving early would break a run in progress: the Safari Zone, the Battle Pyramid, Battle Pike and
+// the contest halls (the contest rooms themselves, not the Lilycove lobby).
+static bool8 IsInChallengeInProgress(void)
+{
+    u16 map = (gSaveBlock1Ptr->location.mapGroup << 8) | gSaveBlock1Ptr->location.mapNum;
+
+    if (GetSafariZoneFlag() || InBattlePyramid() || InBattlePike())
+        return TRUE;
+    return map >= MAP_CONTEST_HALL && map <= MAP_CONTEST_HALL_CUTE; // contest hall rooms (group 25, maps 28-39)
+}
+
 // The Town Map (item or PokéNav map) acts like Fly, without needing a Pokémon that knows Fly or the badge,
 // and works anywhere (indoors, in caves, underwater...) except the Elite Four / Champion rooms. It is not
 // available during link activity.
@@ -1688,7 +1691,7 @@ bool8 CanUseTownMapToFly(void)
 {
     if (IsOverworldLinkActive() || InUnionRoom())
         return FALSE;
-    return !IsInLeagueChallengeMap();
+    return !IsInLeagueChallengeMap() && !IsInChallengeInProgress();
 }
 
 // Opens the Fly map from a Town Map. cancelCallback is the screen to return to if the player presses B.
@@ -1895,6 +1898,7 @@ static void LoadFlyDestIcons(void)
 
 static void CreateFlyDestIcons(void)
 {
+    u16 canFlyFlag;
     u16 mapSecId;
     u16 x;
     u16 y;
@@ -1903,6 +1907,7 @@ static void CreateFlyDestIcons(void)
     u16 shape;
     u8 spriteId;
 
+    canFlyFlag = FLAG_VISITED_LITTLEROOT_TOWN;
     for (mapSecId = MAPSEC_LITTLEROOT_TOWN; mapSecId <= MAPSEC_EVER_GRANDE_CITY; mapSecId++)
     {
         GetMapSecDimensions(mapSecId, &x, &y, &width, &height);
@@ -1921,7 +1926,7 @@ static void CreateFlyDestIcons(void)
         {
             gSprites[spriteId].oam.shape = shape;
 
-            if (FlagGet(GetFlyDestinationFlag(mapSecId)))
+            if (FlagGet(canFlyFlag))
                 gSprites[spriteId].callback = SpriteCB_FlyDestIcon;
             else
                 shape += 3;
@@ -1929,6 +1934,7 @@ static void CreateFlyDestIcons(void)
             StartSpriteAnim(&gSprites[spriteId], shape);
             gSprites[spriteId].sIconMapSec = mapSecId;
         }
+        canFlyFlag++;
     }
 }
 
