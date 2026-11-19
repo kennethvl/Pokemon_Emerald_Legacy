@@ -764,9 +764,9 @@ static const u8 sSilverPowderDesc[] = _(
     "BUG-type moves.");
 
 static const u8 sAmuletCoinDesc[] = _(
-    "Doubles money in\n"
-    "battle if the\n"
-    "holder takes part.");
+    "Doubles money and\n"
+    "triples EXP. points\n"
+    "if the holder fights.");
 
 static const u8 sCleanseTagDesc[] = _(
     "A hold item that\n"

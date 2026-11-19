@@ -143,18 +143,24 @@ static void TestExpAwards(void)
     // Base EXP does not depend on the receiving Pokemon's level (no level-difference scaling).
     CHECK_EQ(ExpLogic_BaseExp(64, 50), 64 * 50 / 7);
     CHECK_EQ(ExpLogic_BaseExp(1, 1), 0);
-    CHECK_EQ(ExpLogic_Award(ExpLogic_BaseExp(1, 1), 0, 0, 0), 1); // never zero
+    CHECK_EQ(ExpLogic_Award(ExpLogic_BaseExp(1, 1), 100, 0, 0), 1); // never zero
 
     // Every eligible party member gets the full amount.
-    CHECK_EQ(ExpLogic_Award(100, 0, 0, 0), 100);
-    CHECK_EQ(ExpLogic_Award(101, 0, 0, 0), 101);
-    CHECK_EQ(ExpLogic_Award(0, 0, 0, 0), 1);
+    CHECK_EQ(ExpLogic_Award(100, 100, 0, 0), 100);
+    CHECK_EQ(ExpLogic_Award(101, 100, 0, 0), 101);
+    CHECK_EQ(ExpLogic_Award(0, 100, 0, 0), 1);
 
-    // Modifiers are 1.5x each and apply in sequence.
-    CHECK_EQ(ExpLogic_Award(100, 1, 0, 0), 150);
-    CHECK_EQ(ExpLogic_Award(100, 0, 1, 0), 150);
-    CHECK_EQ(ExpLogic_Award(100, 0, 0, 1), 150);
-    CHECK_EQ(ExpLogic_Award(100, 1, 1, 1), 100 * 150 / 100 * 150 / 100 * 150 / 100);
+    // Held items: Lucky Egg x1.5, Amulet Coin x3.
+    CHECK_EQ(ExpLogic_HeldItemPercent(0, 0), 100);
+    CHECK_EQ(ExpLogic_HeldItemPercent(1, 0), 150);
+    CHECK_EQ(ExpLogic_HeldItemPercent(0, 1), 300);
+    CHECK_EQ(ExpLogic_Award(100, ExpLogic_HeldItemPercent(1, 0), 0, 0), 150);
+    CHECK_EQ(ExpLogic_Award(100, ExpLogic_HeldItemPercent(0, 1), 0, 0), 300);
+
+    // Trainer and traded modifiers are 1.5x each and stack with the item.
+    CHECK_EQ(ExpLogic_Award(100, 100, 1, 0), 150);
+    CHECK_EQ(ExpLogic_Award(100, 100, 0, 1), 150);
+    CHECK_EQ(ExpLogic_Award(100, 300, 1, 1), 100 * 300 / 100 * 150 / 100 * 150 / 100);
 
     // Who may gain EXP: alive, below max level, not level-capped.
     CHECK(ExpLogic_CanGainExp(1, 50, 100, 0));
