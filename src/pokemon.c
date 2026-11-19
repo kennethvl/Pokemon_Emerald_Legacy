@@ -2458,7 +2458,7 @@ void CreateMonWithEVSpread(struct Pokemon *mon, u16 species, u8 level, u8 fixedI
         evsBits >>= 1;
     }
 
-    evAmount = MAX_TOTAL_EVS / statCount;
+    evAmount = STANDARD_TOTAL_EVS / statCount;
 
     evsBits = 1;
 
@@ -2610,7 +2610,7 @@ void CreateApprenticeMon(struct Pokemon *mon, const struct Apprentice *src, u8 m
     for (i = 0; i < MAX_MON_MOVES; i++)
         SetMonMoveSlot(mon, src->party[monId].moves[i], i);
 
-    evAmount = MAX_TOTAL_EVS / NUM_STATS;
+    evAmount = STANDARD_TOTAL_EVS / NUM_STATS;
     for (i = 0; i < NUM_STATS; i++)
         SetMonData(mon, MON_DATA_HP_EV + i, &evAmount);
 
@@ -2642,7 +2642,7 @@ void CreateMonWithEVSpreadNatureOTID(struct Pokemon *mon, u16 species, u8 level,
         evsBits >>= 1;
     }
 
-    evAmount = MAX_TOTAL_EVS / statCount;
+    evAmount = STANDARD_TOTAL_EVS / statCount;
     evsBits = 1;
     for (i = 0; i < NUM_STATS; i++)
     {

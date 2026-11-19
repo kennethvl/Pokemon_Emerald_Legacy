@@ -236,7 +236,10 @@
 #define MAX_IV_MASK 31
 #define USE_RANDOM_IVS (MAX_PER_STAT_IVS + 1)
 #define MAX_PER_STAT_EVS 255
-#define MAX_TOTAL_EVS 510
+// Player Pokémon can max every stat (6 x 255). Battle EV gain and vitamins only check MAX_PER_STAT_EVS.
+#define MAX_TOTAL_EVS (NUM_STATS * MAX_PER_STAT_EVS)
+// The original Gen 3 total, still used to spread EVs on Battle Frontier / opponent Pokémon and for the Effort Ribbon.
+#define STANDARD_TOTAL_EVS 510
 #define EV_ITEM_RAISE_LIMIT MAX_PER_STAT_EVS
 
 // Battle move flags

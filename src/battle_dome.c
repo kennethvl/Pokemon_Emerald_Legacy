@@ -2524,7 +2524,7 @@ static void CalcDomeMonStats(u16 species, int level, int ivs, u8 evBits, u8 natu
             count++;
     }
 
-    resultingEvs = MAX_TOTAL_EVS / count;
+    resultingEvs = STANDARD_TOTAL_EVS / count;
     for (i = 0; i < NUM_STATS; bits <<= 1, i++)
     {
         evs[i] = 0;
@@ -4563,7 +4563,7 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
                     k++;
                 evBits >>= 1;
             }
-            k = MAX_TOTAL_EVS / k;
+            k = STANDARD_TOTAL_EVS / k;
             evBits = gFacilityTrainerMons[DOME_MONS[trainerTourneyId][i]].evSpread;
             for (j = 0; j < NUM_STATS; j++)
             {

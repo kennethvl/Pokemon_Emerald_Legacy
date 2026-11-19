@@ -274,7 +274,7 @@ void MomApplyNatureChange(void)
     CalculateMonStats(mon);
 }
 
-// ---- Max EVs: every stat's EVs to 255 (ignores the usual 510 total cap) ----
+// ---- Max EVs: every stat's EVs to 255 (the total EV cap is 6 x 255 too) ----
 
 static const u8 sEVMonData[NUM_STATS] =
 {

@@ -1431,7 +1431,7 @@ void GiveLeadMonEffortRibbon(void)
 
 bool8 Special_AreLeadMonEVsMaxedOut(void)
 {
-    if (GetMonEVCount(&gPlayerParty[GetLeadMonIndex()]) >= MAX_TOTAL_EVS)
+    if (GetMonEVCount(&gPlayerParty[GetLeadMonIndex()]) >= STANDARD_TOTAL_EVS)
         return TRUE;
 
     return FALSE;
