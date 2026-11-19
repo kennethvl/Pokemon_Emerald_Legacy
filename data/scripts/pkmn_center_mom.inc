@@ -1,5 +1,6 @@
 @ Mom, found in every Pokémon Center (after receiving the POKéDEX, and not in HARD / NUZLOCKE mode).
-@ She offers the free "modifier" services: Hyper Training, Nature, Ability and Hidden Power type changes.
+@ She offers the free "modifier" services: Hyper Training, Nature, Ability and Hidden Power type changes,
+@ EV reset and the Move Relearner.
 
 @ Called from every Pokémon Center's OnTransition. FLAG_TEMP_10 hides Mom and is cleared on every map load.
 PokemonCenter_EventScript_UpdateMom::
@@ -26,7 +27,9 @@ PokemonCenter_EventScript_MomMenu::
 	case 1, PokemonCenter_EventScript_MomNature
 	case 2, PokemonCenter_EventScript_MomAbility
 	case 3, PokemonCenter_EventScript_MomHiddenPower
-	case 4, PokemonCenter_EventScript_MomGoodbye
+	case 4, PokemonCenter_EventScript_MomResetEVs
+	case 5, PokemonCenter_EventScript_MomMoveRelearner
+	case 6, PokemonCenter_EventScript_MomGoodbye
 	case MULTI_B_PRESSED, PokemonCenter_EventScript_MomGoodbye
 	goto PokemonCenter_EventScript_MomGoodbye
 	end
@@ -157,6 +160,53 @@ PokemonCenter_EventScript_MomSameType::
 	goto PokemonCenter_EventScript_MomMenu
 	end
 
+@ ---- EV reset: set all EVs back to 0 (free) ----
+PokemonCenter_EventScript_MomResetEVs::
+	msgbox PokemonCenter_Text_MomWhichMon, MSGBOX_DEFAULT
+	special ChoosePartyMon
+	waitstate
+	goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, PokemonCenter_EventScript_MomMenu
+	special MomCanModifyPartyMon
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomCantModifyEgg
+	special MomBufferEVReset
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomNoEVs
+	msgbox PokemonCenter_Text_MomEVConfirm, MSGBOX_YESNO
+	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomMenu
+	special MomApplyEVReset
+	playfanfare MUS_LEVEL_UP
+	msgbox PokemonCenter_Text_MomEVDone, MSGBOX_DEFAULT
+	waitfanfare
+	goto PokemonCenter_EventScript_MomMenu
+	end
+
+PokemonCenter_EventScript_MomNoEVs::
+	msgbox PokemonCenter_Text_MomNoEVs, MSGBOX_DEFAULT
+	goto PokemonCenter_EventScript_MomMenu
+	end
+
+@ ---- Move Relearner: reteach level-up moves (free, no HEART SCALE) ----
+PokemonCenter_EventScript_MomMoveRelearner::
+	clearflag FLAG_EGG_MOVES_TUTOR
+	msgbox PokemonCenter_Text_MomWhichMon, MSGBOX_DEFAULT
+	special ChooseMonForMoveRelearner
+	waitstate
+	goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, PokemonCenter_EventScript_MomMenu
+	special IsSelectedMonEgg
+	goto_if_eq VAR_RESULT, TRUE, PokemonCenter_EventScript_MomCantModifyEgg
+	goto_if_eq VAR_0x8005, 0, PokemonCenter_EventScript_MomNoMovesToRelearn
+	msgbox PokemonCenter_Text_MomWhichMove, MSGBOX_DEFAULT
+	special TeachMoveRelearnerMove
+	waitstate
+	goto_if_eq VAR_0x8004, 0, PokemonCenter_EventScript_MomMoveRelearner
+	msgbox PokemonCenter_Text_MomMoveDone, MSGBOX_DEFAULT
+	goto PokemonCenter_EventScript_MomMenu
+	end
+
+PokemonCenter_EventScript_MomNoMovesToRelearn::
+	msgbox PokemonCenter_Text_MomNoMoves, MSGBOX_DEFAULT
+	goto PokemonCenter_EventScript_MomMoveRelearner
+	end
+
 PokemonCenter_EventScript_MomGoodbye::
 	msgbox PokemonCenter_Text_MomGoodbye, MSGBOX_DEFAULT
 	release
@@ -242,3 +292,27 @@ PokemonCenter_Text_MomTypeDone:
 PokemonCenter_Text_MomSameType:
 	.string "Oh, HIDDEN POWER is already that\n"
 	.string "type, dear!$"
+
+PokemonCenter_Text_MomEVConfirm:
+	.string "I'll reset all of {STR_VAR_1}'s\n"
+	.string "training back to zero EVs.\p"
+	.string "It's free. Is that all right?$"
+
+PokemonCenter_Text_MomEVDone:
+	.string "All done! {STR_VAR_1} is ready to\n"
+	.string "train from scratch, dear!$"
+
+PokemonCenter_Text_MomNoEVs:
+	.string "Oh, that POKéMON hasn't been\n"
+	.string "trained at all yet, dear!$"
+
+PokemonCenter_Text_MomWhichMove:
+	.string "Which move should I remind it of?$"
+
+PokemonCenter_Text_MomMoveDone:
+	.string "There you go! No charge for\n"
+	.string "family, dear!$"
+
+PokemonCenter_Text_MomNoMoves:
+	.string "Hmm, there's no move I can remind\n"
+	.string "that POKéMON of, dear.$"

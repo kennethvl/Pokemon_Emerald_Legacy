@@ -270,6 +270,39 @@ void MomApplyNatureChange(void)
     CalculateMonStats(mon);
 }
 
+// ---- EV reset ----
+
+static const u8 sEVMonData[NUM_STATS] =
+{
+    MON_DATA_HP_EV, MON_DATA_ATK_EV, MON_DATA_DEF_EV, MON_DATA_SPEED_EV, MON_DATA_SPATK_EV, MON_DATA_SPDEF_EV,
+};
+
+// Input: VAR_0x8004 = party slot. Output: VAR_RESULT = TRUE if the Pokémon has any EVs to reset.
+void MomBufferEVReset(void)
+{
+    struct Pokemon *mon = SERVICE_MON;
+    u8 i;
+
+    gSpecialVar_Result = FALSE;
+    for (i = 0; i < NUM_STATS; i++)
+    {
+        if (GetMonData(mon, sEVMonData[i]) != 0)
+            gSpecialVar_Result = TRUE;
+    }
+}
+
+// Sets all six EVs to 0 and recalculates stats.
+void MomApplyEVReset(void)
+{
+    struct Pokemon *mon = SERVICE_MON;
+    u8 zero = 0;
+    u8 i;
+
+    for (i = 0; i < NUM_STATS; i++)
+        SetMonData(mon, sEVMonData[i], &zero);
+    CalculateMonStats(mon);
+}
+
 // Charges VAR_0x8006 money. VAR_RESULT = TRUE if the player could pay (and was charged).
 void MomPayForService(void)
 {

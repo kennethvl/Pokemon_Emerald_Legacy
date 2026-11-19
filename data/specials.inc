@@ -553,3 +553,5 @@ gSpecials::
 	def_special MomBufferHiddenPowerChange
 	def_special MomApplyHiddenPowerChange
 	def_special MomPayForService
+	def_special MomBufferEVReset
+	def_special MomApplyEVReset

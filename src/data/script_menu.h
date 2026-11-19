@@ -619,6 +619,8 @@ static const u8 sText_MomHyperTraining[] = _("HYPER TRAINING");
 static const u8 sText_MomNature[] = _("NATURE");
 static const u8 sText_MomAbility[] = _("ABILITY");
 static const u8 sText_MomHiddenPower[] = _("HIDDEN POWER");
+static const u8 sText_MomResetEVs[] = _("RESET EVs");
+static const u8 sText_MomRelearnMoves[] = _("RELEARN MOVES");
 
 static const u8 sText_MomAllStats[] = _("ALL STATS");
 static const u8 sText_MomHp[] = _("HP");
@@ -646,6 +648,8 @@ static const struct MenuAction MultichoiceList_PkmnCenterMom[] =
     {sText_MomNature},
     {sText_MomAbility},
     {sText_MomHiddenPower},
+    {sText_MomResetEVs},
+    {sText_MomRelearnMoves},
     {gText_Cancel},
 };
 
