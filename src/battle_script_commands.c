@@ -3422,7 +3422,7 @@ static void Cmd_getexp(void)
                     i = STRINGID_EMPTYSTRING4;
                 }
 
-                gBattleMoveDamage = ExpLogic_Award(*exp, ExpLogic_HeldItemPercent(holdEffect == HOLD_EFFECT_LUCKY_EGG, holdEffect == HOLD_EFFECT_DOUBLE_PRIZE),
+                gBattleMoveDamage = ExpLogic_Award(*exp, holdEffect == HOLD_EFFECT_LUCKY_EGG,
                                                    (gBattleTypeFlags & BATTLE_TYPE_TRAINER) != 0, tradedBoost);
 
                 // get exp getter battlerId
