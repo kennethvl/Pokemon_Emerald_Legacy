@@ -45,7 +45,6 @@ OldaleTown_Mart_Pokemart_Basic:
 	.2byte ITEM_REPEAT_BALL
 	.2byte ITEM_TIMER_BALL
 	.2byte ITEM_LUCKY_EGG
-	.2byte ITEM_AMULET_COIN
 	.2byte ITEM_NONE
 	release
 	end
@@ -74,7 +73,6 @@ OldaleTown_Mart_Pokemart_Expanded:
 	.2byte ITEM_REPEAT_BALL
 	.2byte ITEM_TIMER_BALL
 	.2byte ITEM_LUCKY_EGG
-	.2byte ITEM_AMULET_COIN
 	.2byte ITEM_NONE
 	release
 	end
@@ -98,7 +96,6 @@ OldaleTown_Mart_Pokemart_PostGame:
 	.2byte ITEM_REPEAT_BALL
 	.2byte ITEM_TIMER_BALL
 	.2byte ITEM_LUCKY_EGG
-	.2byte ITEM_AMULET_COIN
 	.2byte ITEM_NONE
 	release
 	end

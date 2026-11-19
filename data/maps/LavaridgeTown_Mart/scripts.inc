@@ -52,7 +52,6 @@ LavaridgeTown_Mart_Pokemart:
 	.2byte ITEM_ELIXIR
 	.2byte ITEM_MAX_ETHER
 	.2byte ITEM_LUCKY_EGG
-	.2byte ITEM_AMULET_COIN
 	.2byte ITEM_NONE
 	release
 	end
@@ -85,7 +84,6 @@ LavaridgeTown_Mart_Pokemart_PostGame:
 	.2byte ITEM_ELIXIR
 	.2byte ITEM_MAX_ETHER
 	.2byte ITEM_LUCKY_EGG
-	.2byte ITEM_AMULET_COIN
 	.2byte ITEM_NONE
 	release
 	end

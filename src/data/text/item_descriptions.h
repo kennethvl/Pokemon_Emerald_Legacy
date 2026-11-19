@@ -764,7 +764,7 @@ static const u8 sSilverPowderDesc[] = _(
     "BUG-type moves.");
 
 static const u8 sAmuletCoinDesc[] = _(
-    "Triples money in\n"
+    "Doubles money in\n"
     "battle if the\n"
     "holder takes part.");
 

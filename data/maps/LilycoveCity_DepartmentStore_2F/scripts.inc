@@ -50,7 +50,6 @@ LilycoveCity_DepartmentStore_2F_Pokemart1:
 	.2byte ITEM_ELIXIR
 	.2byte ITEM_MAX_ELIXIR
 	.2byte ITEM_LUCKY_EGG
-	.2byte ITEM_AMULET_COIN
 	.2byte ITEM_NONE
 	release
 	end
@@ -94,7 +93,6 @@ LilycoveCity_DepartmentStore_2F_Pokemart2:
 	.2byte ITEM_ELIXIR
 	.2byte ITEM_MAX_ELIXIR
 	.2byte ITEM_LUCKY_EGG
-	.2byte ITEM_AMULET_COIN
 	.2byte ITEM_NONE
 	release
 	end
