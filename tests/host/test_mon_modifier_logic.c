@@ -140,8 +140,23 @@ static void TestAbility(void)
     CHECK_EQ(ModLogic_OtherAbilitySlot(1), 0);
 }
 
+static void TestMomDialogueStage(void)
+{
+    CHECK_EQ(ModLogic_MomDialogueStage(0, 0, 0, 0), MODLOGIC_MOM_STAGE_FRESH);
+    CHECK_EQ(ModLogic_MomDialogueStage(1, 0, 0, 0), MODLOGIC_MOM_STAGE_BADGES);
+    CHECK_EQ(ModLogic_MomDialogueStage(4, 0, 0, 0), MODLOGIC_MOM_STAGE_BADGES);
+    CHECK_EQ(ModLogic_MomDialogueStage(5, 1, 0, 0), MODLOGIC_MOM_STAGE_BEAT_DAD);
+    CHECK_EQ(ModLogic_MomDialogueStage(6, 1, 1, 0), MODLOGIC_MOM_STAGE_CRISIS);
+    CHECK_EQ(ModLogic_MomDialogueStage(6, 1, 5, 0), MODLOGIC_MOM_STAGE_CRISIS);
+    CHECK_EQ(ModLogic_MomDialogueStage(7, 1, 7, 0), MODLOGIC_MOM_STAGE_BEAT_DAD); // crisis over
+    CHECK_EQ(ModLogic_MomDialogueStage(8, 1, 7, 0), MODLOGIC_MOM_STAGE_ALL_BADGES);
+    CHECK_EQ(ModLogic_MomDialogueStage(8, 1, 7, 1), MODLOGIC_MOM_STAGE_CHAMPION);
+    CHECK_EQ(ModLogic_MomDialogueStage(0, 0, 0, 1), MODLOGIC_MOM_STAGE_CHAMPION);
+}
+
 int main(void)
 {
+    TestMomDialogueStage();
     TestOverrideEncoding();
     TestStatNature();
     TestHiddenPower();

@@ -1,5 +1,7 @@
 #include "global.h"
 #include "event_data.h"
+#include "field_message_box.h"
+#include "random.h"
 #include "money.h"
 #include "mom_services.h"
 #include "mon_modifier_logic.h"
@@ -10,6 +12,8 @@
 #include "pokemon_summary_screen.h"
 #include "constants/abilities.h"
 #include "constants/field_specials.h"
+#include "constants/flags.h"
+#include "constants/vars.h"
 #include "constants/pkmn_center_mom.h"
 #include "constants/pokemon.h"
 
@@ -328,4 +332,92 @@ void MomPayForService(void)
     {
         gSpecialVar_Result = FALSE;
     }
+}
+
+// ---- Greetings and goodbyes, by story stage (see ModLogic_MomDialogueStage) ----
+
+#define MOM_GREETINGS_PER_STAGE 3
+#define MOM_GOODBYES_PER_STAGE  2
+
+static const u8 sText_MomHelloFresh1[] = _("Oh, {PLAYER}! There you are!\nAre you eating properly out there?\pYour father says I worry too much.\nHe's probably right… but I'm MOM!$");
+static const u8 sText_MomHelloFresh2[] = _("{PLAYER}! Let me look at you…\nYou've grown already, I swear!\pDid you pack your spare socks?\nDon't roll your eyes at me, dear!$");
+static const u8 sText_MomHelloFresh3[] = _("Oh, {PLAYER}! I couldn't help it,\nI had to see how you were doing!\pYour dad's waiting in PETALBURG.\nGo say hi to him sometime, okay?$");
+
+static const u8 sText_MomHelloBadges1[] = _("{PLAYER}! Is that a GYM BADGE?\nOh, show me, show me!\pI'm telling your father the very\nminute I get home!$");
+static const u8 sText_MomHelloBadges2[] = _("There's my little GYM challenger!\pYour dad keeps asking about you.\nHe pretends he doesn't, of course.$");
+static const u8 sText_MomHelloBadges3[] = _("Oh, {PLAYER}, your hair's a mess!\nHold still, let me fix it…\pThere. Now you look like a proper\nPOKéMON TRAINER, dear.$");
+
+static const u8 sText_MomHelloBeatDad1[] = _("{PLAYER}… your father called me\nright after your match.\pHe said you were wonderful.\nI think he was crying a little!$");
+static const u8 sText_MomHelloBeatDad2[] = _("You beat your father, {PLAYER}!\nHe's been smiling all week.\pDon't tell him I told you, but he\nput your photo up at the GYM.$");
+static const u8 sText_MomHelloBeatDad3[] = _("{PLAYER}! I'm so very proud of you.\pYour dad taught you to be strong,\nand I taught you to be kind!$");
+
+static const u8 sText_MomHelloCrisis1[] = _("{PLAYER}! Oh, thank goodness!\nI saw the storms on the news…\pPromise me you'll be careful.\nYour father's out there helping, too.$");
+static const u8 sText_MomHelloCrisis2[] = _("Come here, let me hug you.\nI've been so worried, dear.\pYour dad says you'll be just fine.\nHe's never wrong about you.$");
+static const u8 sText_MomHelloCrisis3[] = _("This rain and this heat… it's all\nso frightening, {PLAYER}.\pIf anyone can make this right,\nit's my brave little one.$");
+
+static const u8 sText_MomHelloAllBadges1[] = _("Eight BADGES, {PLAYER}! Eight!\nThe POKéMON LEAGUE is next…\pI'll be cheering the loudest.\nYour father's already practicing!$");
+static const u8 sText_MomHelloAllBadges2[] = _("VICTORY ROAD, huh? I'll be brave\nabout it. I will. I promise.\p…Did you pack enough POTIONS?\nAnd a sweater? It gets chilly!$");
+static const u8 sText_MomHelloAllBadges3[] = _("Your father says you're ready.\pI know you are, too… but you'll\nalways be my baby, {PLAYER}.$");
+
+static const u8 sText_MomHelloChampion1[] = _("My baby, the CHAMPION! I tell\neveryone at the market, you know.\pYour dad's told his whole GYM.\nTwice. He's so proud, it's silly!$");
+static const u8 sText_MomHelloChampion2[] = _("Oh, CHAMPION {PLAYER}! Should I bow?\nHa ha! Come here, give me a hug.\pYou'll always be my sweet child,\nno matter how many titles you win.$");
+static const u8 sText_MomHelloChampion3[] = _("Your father and I watched your\nmatch on TV. We both cried!\pDon't forget to come home for\ndinner sometime, CHAMPION.$");
+
+static const u8 *const sMomGreetings[MODLOGIC_MOM_NUM_STAGES][MOM_GREETINGS_PER_STAGE] =
+{
+    [MODLOGIC_MOM_STAGE_FRESH]      = {sText_MomHelloFresh1, sText_MomHelloFresh2, sText_MomHelloFresh3},
+    [MODLOGIC_MOM_STAGE_BADGES]     = {sText_MomHelloBadges1, sText_MomHelloBadges2, sText_MomHelloBadges3},
+    [MODLOGIC_MOM_STAGE_BEAT_DAD]   = {sText_MomHelloBeatDad1, sText_MomHelloBeatDad2, sText_MomHelloBeatDad3},
+    [MODLOGIC_MOM_STAGE_CRISIS]     = {sText_MomHelloCrisis1, sText_MomHelloCrisis2, sText_MomHelloCrisis3},
+    [MODLOGIC_MOM_STAGE_ALL_BADGES] = {sText_MomHelloAllBadges1, sText_MomHelloAllBadges2, sText_MomHelloAllBadges3},
+    [MODLOGIC_MOM_STAGE_CHAMPION]   = {sText_MomHelloChampion1, sText_MomHelloChampion2, sText_MomHelloChampion3},
+};
+
+static const u8 sText_MomByeFresh1[] = _("Take care out there, {PLAYER}!\nAnd don't forget to eat well!$");
+static const u8 sText_MomByeFresh2[] = _("Brush your teeth, call home, and\nlisten to your POKéMON, dear!$");
+static const u8 sText_MomByeBadges1[] = _("Go get that next BADGE, dear!\nDad and I are rooting for you!$");
+static const u8 sText_MomByeBadges2[] = _("Wear clean socks to your next\nGYM battle! It's good luck!$");
+static const u8 sText_MomByeBeatDad1[] = _("Your father's dying to hear all\nabout your next BADGE!$");
+static const u8 sText_MomByeBeatDad2[] = _("Be kind to your POKéMON, dear.\nYour father always says so.$");
+static const u8 sText_MomByeCrisis1[] = _("Please be careful, {PLAYER}.\nCome home safe to us.$");
+static const u8 sText_MomByeCrisis2[] = _("Dad and I love you very much.\nNow go be brave, sweetheart.$");
+static const u8 sText_MomByeAllBadges1[] = _("Go show the LEAGUE who you are!\nAnd eat a good breakfast first!$");
+static const u8 sText_MomByeAllBadges2[] = _("Your dad says trust your POKéMON.\nI say: wear a scarf, dear!$");
+static const u8 sText_MomByeChampion1[] = _("Come home for dinner soon, dear.\nYour father's making his curry!$");
+static const u8 sText_MomByeChampion2[] = _("Off you go, CHAMPION! But you're\nstill doing the dishes at home.$");
+
+static const u8 *const sMomGoodbyes[MODLOGIC_MOM_NUM_STAGES][MOM_GOODBYES_PER_STAGE] =
+{
+    [MODLOGIC_MOM_STAGE_FRESH]      = {sText_MomByeFresh1, sText_MomByeFresh2},
+    [MODLOGIC_MOM_STAGE_BADGES]     = {sText_MomByeBadges1, sText_MomByeBadges2},
+    [MODLOGIC_MOM_STAGE_BEAT_DAD]   = {sText_MomByeBeatDad1, sText_MomByeBeatDad2},
+    [MODLOGIC_MOM_STAGE_CRISIS]     = {sText_MomByeCrisis1, sText_MomByeCrisis2},
+    [MODLOGIC_MOM_STAGE_ALL_BADGES] = {sText_MomByeAllBadges1, sText_MomByeAllBadges2},
+    [MODLOGIC_MOM_STAGE_CHAMPION]   = {sText_MomByeChampion1, sText_MomByeChampion2},
+};
+
+static u8 GetMomDialogueStage(void)
+{
+    u8 numBadges = 0;
+    u16 flag;
+
+    for (flag = FLAG_BADGE01_GET; flag < FLAG_BADGE01_GET + NUM_BADGES; flag++)
+    {
+        if (FlagGet(flag))
+            numBadges++;
+    }
+    return ModLogic_MomDialogueStage(numBadges, FlagGet(FLAG_DEFEATED_PETALBURG_GYM),
+                                     VarGet(VAR_SOOTOPOLIS_CITY_STATE), FlagGet(FLAG_SYS_GAME_CLEAR));
+}
+
+// Prints a random greeting for the current story stage. The script follows with waitmessage + waitbuttonpress.
+void MomShowGreeting(void)
+{
+    ShowFieldMessage(sMomGreetings[GetMomDialogueStage()][Random() % MOM_GREETINGS_PER_STAGE]);
+}
+
+// Prints a random goodbye for the current story stage. The script follows with waitmessage + waitbuttonpress.
+void MomShowGoodbye(void)
+{
+    ShowFieldMessage(sMomGoodbyes[GetMomDialogueStage()][Random() % MOM_GOODBYES_PER_STAGE]);
 }

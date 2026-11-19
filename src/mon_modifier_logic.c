@@ -82,3 +82,19 @@ unsigned char ModLogic_OtherAbilitySlot(unsigned char slot)
 {
     return slot ? 0 : 1;
 }
+
+unsigned char ModLogic_MomDialogueStage(unsigned char numBadges, unsigned char beatDad,
+                                        unsigned short sootopolisState, unsigned char champion)
+{
+    if (champion)
+        return MODLOGIC_MOM_STAGE_CHAMPION;
+    if (numBadges >= 8)
+        return MODLOGIC_MOM_STAGE_ALL_BADGES;
+    if (sootopolisState >= 1 && sootopolisState <= 5)
+        return MODLOGIC_MOM_STAGE_CRISIS;
+    if (beatDad)
+        return MODLOGIC_MOM_STAGE_BEAT_DAD;
+    if (numBadges > 0)
+        return MODLOGIC_MOM_STAGE_BADGES;
+    return MODLOGIC_MOM_STAGE_FRESH;
+}

@@ -17,7 +17,9 @@ PokemonCenter_EventScript_HideMom::
 PokemonCenter_EventScript_Mom::
 	lock
 	faceplayer
-	msgbox PokemonCenter_Text_MomWelcome, MSGBOX_DEFAULT
+	special MomShowGreeting
+	waitmessage
+	waitbuttonpress
 PokemonCenter_EventScript_MomMenu::
 	special MomDisableEggMovesRelearner
 	message PokemonCenter_Text_MomWhatCanIDo
@@ -237,22 +239,15 @@ PokemonCenter_EventScript_MomMoveRelearnerEgg::
 
 PokemonCenter_EventScript_MomGoodbye::
 	special MomDisableEggMovesRelearner
-	msgbox PokemonCenter_Text_MomGoodbye, MSGBOX_DEFAULT
+	special MomShowGoodbye
+	waitmessage
+	waitbuttonpress
 	release
 	end
-
-PokemonCenter_Text_MomWelcome:
-	.string "Oh, {PLAYER}! What a lovely surprise!\n"
-	.string "Your mother is always looking out\l"
-	.string "for you, you know.$"
 
 PokemonCenter_Text_MomWhatCanIDo:
 	.string "Now, what can your mother do for\n"
 	.string "you today, dear?$"
-
-PokemonCenter_Text_MomGoodbye:
-	.string "Take care out there, {PLAYER}!\n"
-	.string "And don't forget to eat well!$"
 
 PokemonCenter_Text_MomWhichMon:
 	.string "Which POKéMON would you like me\n"

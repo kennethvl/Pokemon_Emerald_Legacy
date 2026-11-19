@@ -40,4 +40,16 @@ unsigned int ModLogic_HyperTrainCost(unsigned char statsToTrain, unsigned int pr
 unsigned char ModLogic_CanSwapAbility(unsigned char ability0, unsigned char ability1);
 unsigned char ModLogic_OtherAbilitySlot(unsigned char slot);
 
+// --- Mom's dialogue -----------------------------------------------------------------------------
+// Story stage that picks Mom's greeting and goodbye. Later stages win.
+#define MODLOGIC_MOM_STAGE_FRESH       0 // no badges yet
+#define MODLOGIC_MOM_STAGE_BADGES      1 // 1+ badges
+#define MODLOGIC_MOM_STAGE_BEAT_DAD    2 // beat Norman at the Petalburg Gym
+#define MODLOGIC_MOM_STAGE_CRISIS      3 // Groudon/Kyogre crisis (VAR_SOOTOPOLIS_CITY_STATE 1-5)
+#define MODLOGIC_MOM_STAGE_ALL_BADGES  4 // all 8 badges
+#define MODLOGIC_MOM_STAGE_CHAMPION    5 // entered the Hall of Fame
+#define MODLOGIC_MOM_NUM_STAGES        6
+unsigned char ModLogic_MomDialogueStage(unsigned char numBadges, unsigned char beatDad,
+                                        unsigned short sootopolisState, unsigned char champion);
+
 #endif // GUARD_MON_MODIFIER_LOGIC_H
