@@ -274,15 +274,15 @@ void MomApplyNatureChange(void)
     CalculateMonStats(mon);
 }
 
-// ---- EV reset ----
+// ---- Max EVs: every stat's EVs to 255 (ignores the usual 510 total cap) ----
 
 static const u8 sEVMonData[NUM_STATS] =
 {
     MON_DATA_HP_EV, MON_DATA_ATK_EV, MON_DATA_DEF_EV, MON_DATA_SPEED_EV, MON_DATA_SPATK_EV, MON_DATA_SPDEF_EV,
 };
 
-// Input: VAR_0x8004 = party slot. Output: VAR_RESULT = TRUE if the Pokémon has any EVs to reset.
-void MomBufferEVReset(void)
+// Input: VAR_0x8004 = party slot. Output: VAR_RESULT = TRUE if any of the Pokémon's EVs is below the maximum.
+void MomBufferMaxEVs(void)
 {
     struct Pokemon *mon = SERVICE_MON;
     u8 i;
@@ -290,20 +290,20 @@ void MomBufferEVReset(void)
     gSpecialVar_Result = FALSE;
     for (i = 0; i < NUM_STATS; i++)
     {
-        if (GetMonData(mon, sEVMonData[i]) != 0)
+        if (GetMonData(mon, sEVMonData[i]) < MAX_PER_STAT_EVS)
             gSpecialVar_Result = TRUE;
     }
 }
 
-// Sets all six EVs to 0 and recalculates stats.
-void MomApplyEVReset(void)
+// Sets all six EVs to MAX_PER_STAT_EVS and recalculates stats.
+void MomApplyMaxEVs(void)
 {
     struct Pokemon *mon = SERVICE_MON;
-    u8 zero = 0;
+    u8 maxEV = MAX_PER_STAT_EVS;
     u8 i;
 
     for (i = 0; i < NUM_STATS; i++)
-        SetMonData(mon, sEVMonData[i], &zero);
+        SetMonData(mon, sEVMonData[i], &maxEV);
     CalculateMonStats(mon);
 }
 

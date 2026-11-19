@@ -553,8 +553,8 @@ gSpecials::
 	def_special MomBufferHiddenPowerChange
 	def_special MomApplyHiddenPowerChange
 	def_special MomPayForService
-	def_special MomBufferEVReset
-	def_special MomApplyEVReset
+	def_special MomBufferMaxEVs
+	def_special MomApplyMaxEVs
 	def_special MomEnableEggMovesRelearner
 	def_special MomDisableEggMovesRelearner
 	def_special MomShowGreeting
