@@ -1,5 +1,5 @@
 @ Mom, found in every Pokémon Center (after receiving the POKéDEX, and not in HARD / NUZLOCKE mode).
-@ She offers the "modifier" services: Hyper Training, Nature, Ability and Hidden Power type changes.
+@ She offers the free "modifier" services: Hyper Training, Nature, Ability and Hidden Power type changes.
 
 @ Called from every Pokémon Center's OnTransition. FLAG_TEMP_10 hides Mom and is cleared on every map load.
 PokemonCenter_EventScript_UpdateMom::
@@ -31,7 +31,7 @@ PokemonCenter_EventScript_MomMenu::
 	goto PokemonCenter_EventScript_MomGoodbye
 	end
 
-@ ---- Hyper Training: raise IVs to 31, MOM_SERVICE_PRICE per IV raised ----
+@ ---- Hyper Training: raise IVs to 31 (free) ----
 PokemonCenter_EventScript_MomHyperTraining::
 	msgbox PokemonCenter_Text_MomWhichMon, MSGBOX_DEFAULT
 	special ChoosePartyMon
@@ -50,8 +50,6 @@ PokemonCenter_EventScript_MomHyperTrainingStat::
 	goto_if_eq VAR_RESULT, 0, PokemonCenter_EventScript_MomHyperAlreadyPerfect
 	msgbox PokemonCenter_Text_MomHyperConfirm, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomMenu
-	special MomPayForService
-	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomNotEnoughMoney
 	special MomApplyHyperTraining
 	playfanfare MUS_LEVEL_UP
 	msgbox PokemonCenter_Text_MomHyperDone, MSGBOX_DEFAULT
@@ -66,11 +64,6 @@ PokemonCenter_EventScript_MomHyperAlreadyPerfect::
 
 PokemonCenter_EventScript_MomCantModifyEgg::
 	msgbox PokemonCenter_Text_MomEgg, MSGBOX_DEFAULT
-	goto PokemonCenter_EventScript_MomMenu
-	end
-
-PokemonCenter_EventScript_MomNotEnoughMoney::
-	msgbox PokemonCenter_Text_MomNotEnoughMoney, MSGBOX_DEFAULT
 	goto PokemonCenter_EventScript_MomMenu
 	end
 
@@ -95,8 +88,6 @@ PokemonCenter_EventScript_MomNature::
 	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomSameNature
 	msgbox PokemonCenter_Text_MomNatureConfirm, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomMenu
-	special MomPayForService
-	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomNotEnoughMoney
 	special MomApplyNatureChange
 	playfanfare MUS_LEVEL_UP
 	msgbox PokemonCenter_Text_MomNatureDone, MSGBOX_DEFAULT
@@ -121,8 +112,6 @@ PokemonCenter_EventScript_MomAbility::
 	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomOnlyOneAbility
 	msgbox PokemonCenter_Text_MomAbilityConfirm, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomMenu
-	special MomPayForService
-	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomNotEnoughMoney
 	special MomApplyAbilityChange
 	playfanfare MUS_LEVEL_UP
 	msgbox PokemonCenter_Text_MomAbilityDone, MSGBOX_DEFAULT
@@ -156,8 +145,6 @@ PokemonCenter_EventScript_MomHiddenPower::
 	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomSameType
 	msgbox PokemonCenter_Text_MomTypeConfirm, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomMenu
-	special MomPayForService
-	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomNotEnoughMoney
 	special MomApplyHiddenPowerChange
 	playfanfare MUS_LEVEL_UP
 	msgbox PokemonCenter_Text_MomTypeDone, MSGBOX_DEFAULT
@@ -196,16 +183,12 @@ PokemonCenter_Text_MomEgg:
 	.string "Oh, that's an EGG, dear.\n"
 	.string "It's much too young for that!$"
 
-PokemonCenter_Text_MomNotEnoughMoney:
-	.string "Oh dear, you don't have enough\n"
-	.string "money for that.$"
-
 PokemonCenter_Text_MomWhichStat:
 	.string "Which one should I train?$"
 
 PokemonCenter_Text_MomHyperConfirm:
 	.string "I'll max out {STR_VAR_1}'s {STR_VAR_3}\n"
-	.string "for ¥{STR_VAR_2}. Is that all right?$"
+	.string "for free. Is that all right?$"
 
 PokemonCenter_Text_MomHyperDone:
 	.string "All done! {STR_VAR_1} has been\n"
@@ -221,7 +204,7 @@ PokemonCenter_Text_MomOnlyOneAbility:
 
 PokemonCenter_Text_MomAbilityConfirm:
 	.string "I can switch {STR_VAR_2} for\n"
-	.string "{STR_VAR_3}. That's ¥{STR_VAR_1}.\p"
+	.string "{STR_VAR_3}. It's on the house!\p"
 	.string "Is that all right?$"
 
 PokemonCenter_Text_MomAbilityDone:
@@ -234,7 +217,7 @@ PokemonCenter_Text_MomWhichNature:
 PokemonCenter_Text_MomNatureConfirm:
 	.string "Its stats will grow like a\n"
 	.string "{STR_VAR_3} POKéMON, not {STR_VAR_2}.\p"
-	.string "That's ¥{STR_VAR_1}. Is that all right?$"
+	.string "It's free. Is that all right?$"
 
 PokemonCenter_Text_MomNatureDone:
 	.string "All done! Its stats now follow the\n"
@@ -250,7 +233,7 @@ PokemonCenter_Text_MomWhichType:
 PokemonCenter_Text_MomTypeConfirm:
 	.string "HIDDEN POWER will be {STR_VAR_3}-type\n"
 	.string "instead of {STR_VAR_2}-type.\p"
-	.string "That's ¥{STR_VAR_1}. Is that all right?$"
+	.string "It's free. Is that all right?$"
 
 PokemonCenter_Text_MomTypeDone:
 	.string "All done! HIDDEN POWER is now\n"
