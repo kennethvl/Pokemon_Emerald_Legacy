@@ -51,6 +51,7 @@ SlateportCity_Mart_Pokemart:
 	.2byte ITEM_MOOMOO_MILK
 	.2byte ITEM_ETHER
 	.2byte ITEM_LUCKY_EGG
+	.2byte ITEM_AMULET_COIN
 	.2byte ITEM_NONE
 	release
 	end
@@ -81,6 +82,7 @@ SlateportCity_Mart_Pokemart_PostGame:
 	.2byte ITEM_MOOMOO_MILK
 	.2byte ITEM_ETHER
 	.2byte ITEM_LUCKY_EGG
+	.2byte ITEM_AMULET_COIN
 	.2byte ITEM_NONE
 	release
 	end

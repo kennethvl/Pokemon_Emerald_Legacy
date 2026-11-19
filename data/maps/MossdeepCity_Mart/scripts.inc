@@ -51,6 +51,7 @@ MossdeepCity_Mart_Pokemart:
 	.2byte ITEM_RARE_CANDY
 	.2byte ITEM_MAX_ELIXIR
 	.2byte ITEM_LUCKY_EGG
+	.2byte ITEM_AMULET_COIN
 	.2byte ITEM_NONE
 	release
 	end
@@ -82,6 +83,7 @@ MossdeepCity_Mart_Pokemart_PostGame:
 	.2byte ITEM_RARE_CANDY
 	.2byte ITEM_MAX_ELIXIR
 	.2byte ITEM_LUCKY_EGG
+	.2byte ITEM_AMULET_COIN
 	.2byte ITEM_NONE
 	release
 	end
