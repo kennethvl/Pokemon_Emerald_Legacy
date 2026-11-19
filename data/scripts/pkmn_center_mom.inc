@@ -42,33 +42,28 @@ PokemonCenter_EventScript_MomHyperTraining::
 	waitstate
 	goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, PokemonCenter_EventScript_MomMenu
 	special MomCanModifyPartyMon
-	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomCantModifyEgg
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomHyperTrainingEgg
 PokemonCenter_EventScript_MomHyperTrainingStat::
 	message PokemonCenter_Text_MomWhichStat
 	waitmessage
 	multichoice 0, 0, MULTI_MOM_HYPER_TRAINING, FALSE
-	goto_if_eq VAR_RESULT, MOM_HYPER_CANCEL, PokemonCenter_EventScript_MomMenu
-	goto_if_eq VAR_RESULT, MULTI_B_PRESSED, PokemonCenter_EventScript_MomMenu
+	goto_if_eq VAR_RESULT, MOM_HYPER_CANCEL, PokemonCenter_EventScript_MomHyperTraining
+	goto_if_eq VAR_RESULT, MULTI_B_PRESSED, PokemonCenter_EventScript_MomHyperTraining
 	copyvar VAR_0x8005, VAR_RESULT
 	special MomBufferHyperTraining
 	goto_if_eq VAR_RESULT, 0, PokemonCenter_EventScript_MomHyperAlreadyPerfect
 	msgbox PokemonCenter_Text_MomHyperConfirm, MSGBOX_YESNO
-	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomMenu
+	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomHyperTrainingStat
 	special MomApplyHyperTraining
 	playfanfare MUS_LEVEL_UP
 	msgbox PokemonCenter_Text_MomHyperDone, MSGBOX_DEFAULT
 	waitfanfare
-	goto PokemonCenter_EventScript_MomMenu
+	goto PokemonCenter_EventScript_MomHyperTraining
 	end
 
 PokemonCenter_EventScript_MomHyperAlreadyPerfect::
 	msgbox PokemonCenter_Text_MomHyperAlreadyPerfect, MSGBOX_DEFAULT
-	goto PokemonCenter_EventScript_MomMenu
-	end
-
-PokemonCenter_EventScript_MomCantModifyEgg::
-	msgbox PokemonCenter_Text_MomEgg, MSGBOX_DEFAULT
-	goto PokemonCenter_EventScript_MomMenu
+	goto PokemonCenter_EventScript_MomHyperTrainingStat
 	end
 
 @ ---- Nature change: changes how stats grow (like a Mint); the real nature is kept ----
@@ -78,7 +73,7 @@ PokemonCenter_EventScript_MomNature::
 	waitstate
 	goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, PokemonCenter_EventScript_MomMenu
 	special MomCanModifyPartyMon
-	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomCantModifyEgg
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomNatureEgg
 	message PokemonCenter_Text_MomWhichNature
 	waitmessage
 	copyvar VAR_0x8007, VAR_0x8004
@@ -86,22 +81,22 @@ PokemonCenter_EventScript_MomNature::
 	special ShowScrollableMultichoice
 	waitstate
 	copyvar VAR_0x8004, VAR_0x8007
-	goto_if_eq VAR_RESULT, MULTI_B_PRESSED, PokemonCenter_EventScript_MomMenu
+	goto_if_eq VAR_RESULT, MULTI_B_PRESSED, PokemonCenter_EventScript_MomNature
 	copyvar VAR_0x8005, VAR_RESULT
 	special MomBufferNatureChange
 	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomSameNature
 	msgbox PokemonCenter_Text_MomNatureConfirm, MSGBOX_YESNO
-	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomMenu
+	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomNature
 	special MomApplyNatureChange
 	playfanfare MUS_LEVEL_UP
 	msgbox PokemonCenter_Text_MomNatureDone, MSGBOX_DEFAULT
 	waitfanfare
-	goto PokemonCenter_EventScript_MomMenu
+	goto PokemonCenter_EventScript_MomNature
 	end
 
 PokemonCenter_EventScript_MomSameNature::
 	msgbox PokemonCenter_Text_MomSameNature, MSGBOX_DEFAULT
-	goto PokemonCenter_EventScript_MomMenu
+	goto PokemonCenter_EventScript_MomNature
 	end
 
 @ ---- Ability change: switch between the species' two abilities (like an Ability Capsule) ----
@@ -111,21 +106,21 @@ PokemonCenter_EventScript_MomAbility::
 	waitstate
 	goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, PokemonCenter_EventScript_MomMenu
 	special MomCanModifyPartyMon
-	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomCantModifyEgg
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomAbilityEgg
 	special MomBufferAbilityChange
 	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomOnlyOneAbility
 	msgbox PokemonCenter_Text_MomAbilityConfirm, MSGBOX_YESNO
-	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomMenu
+	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomAbility
 	special MomApplyAbilityChange
 	playfanfare MUS_LEVEL_UP
 	msgbox PokemonCenter_Text_MomAbilityDone, MSGBOX_DEFAULT
 	waitfanfare
-	goto PokemonCenter_EventScript_MomMenu
+	goto PokemonCenter_EventScript_MomAbility
 	end
 
 PokemonCenter_EventScript_MomOnlyOneAbility::
 	msgbox PokemonCenter_Text_MomOnlyOneAbility, MSGBOX_DEFAULT
-	goto PokemonCenter_EventScript_MomMenu
+	goto PokemonCenter_EventScript_MomAbility
 	end
 
 @ ---- Hidden Power type change: the type no longer depends on the IVs ----
@@ -135,7 +130,7 @@ PokemonCenter_EventScript_MomHiddenPower::
 	waitstate
 	goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, PokemonCenter_EventScript_MomMenu
 	special MomCanModifyPartyMon
-	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomCantModifyEgg
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomHiddenPowerEgg
 	message PokemonCenter_Text_MomWhichType
 	waitmessage
 	copyvar VAR_0x8007, VAR_0x8004
@@ -143,22 +138,22 @@ PokemonCenter_EventScript_MomHiddenPower::
 	special ShowScrollableMultichoice
 	waitstate
 	copyvar VAR_0x8004, VAR_0x8007
-	goto_if_eq VAR_RESULT, MULTI_B_PRESSED, PokemonCenter_EventScript_MomMenu
+	goto_if_eq VAR_RESULT, MULTI_B_PRESSED, PokemonCenter_EventScript_MomHiddenPower
 	copyvar VAR_0x8005, VAR_RESULT
 	special MomBufferHiddenPowerChange
 	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomSameType
 	msgbox PokemonCenter_Text_MomTypeConfirm, MSGBOX_YESNO
-	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomMenu
+	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomHiddenPower
 	special MomApplyHiddenPowerChange
 	playfanfare MUS_LEVEL_UP
 	msgbox PokemonCenter_Text_MomTypeDone, MSGBOX_DEFAULT
 	waitfanfare
-	goto PokemonCenter_EventScript_MomMenu
+	goto PokemonCenter_EventScript_MomHiddenPower
 	end
 
 PokemonCenter_EventScript_MomSameType::
 	msgbox PokemonCenter_Text_MomSameType, MSGBOX_DEFAULT
-	goto PokemonCenter_EventScript_MomMenu
+	goto PokemonCenter_EventScript_MomHiddenPower
 	end
 
 @ ---- EV reset: set all EVs back to 0 (free) ----
@@ -168,21 +163,21 @@ PokemonCenter_EventScript_MomResetEVs::
 	waitstate
 	goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, PokemonCenter_EventScript_MomMenu
 	special MomCanModifyPartyMon
-	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomCantModifyEgg
+	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomResetEVsEgg
 	special MomBufferEVReset
 	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomNoEVs
 	msgbox PokemonCenter_Text_MomEVConfirm, MSGBOX_YESNO
-	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomMenu
+	goto_if_eq VAR_RESULT, NO, PokemonCenter_EventScript_MomResetEVs
 	special MomApplyEVReset
 	playfanfare MUS_LEVEL_UP
 	msgbox PokemonCenter_Text_MomEVDone, MSGBOX_DEFAULT
 	waitfanfare
-	goto PokemonCenter_EventScript_MomMenu
+	goto PokemonCenter_EventScript_MomResetEVs
 	end
 
 PokemonCenter_EventScript_MomNoEVs::
 	msgbox PokemonCenter_Text_MomNoEVs, MSGBOX_DEFAULT
-	goto PokemonCenter_EventScript_MomMenu
+	goto PokemonCenter_EventScript_MomResetEVs
 	end
 
 @ ---- Move Relearner: reteach level-up moves and teach Egg moves (free, no HEART SCALE) ----
@@ -194,18 +189,49 @@ PokemonCenter_EventScript_MomMoveRelearner::
 	waitstate
 	goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, PokemonCenter_EventScript_MomMenu
 	special IsSelectedMonEgg
-	goto_if_eq VAR_RESULT, TRUE, PokemonCenter_EventScript_MomCantModifyEgg
+	goto_if_eq VAR_RESULT, TRUE, PokemonCenter_EventScript_MomMoveRelearnerEgg
 	goto_if_eq VAR_0x8005, 0, PokemonCenter_EventScript_MomNoMovesToRelearn
 	msgbox PokemonCenter_Text_MomWhichMove, MSGBOX_DEFAULT
 	special TeachMoveRelearnerMove
 	waitstate
 	goto_if_eq VAR_0x8004, 0, PokemonCenter_EventScript_MomMoveRelearner
 	msgbox PokemonCenter_Text_MomMoveDone, MSGBOX_DEFAULT
-	goto PokemonCenter_EventScript_MomMenu
+	goto PokemonCenter_EventScript_MomMoveRelearner
 	end
 
 PokemonCenter_EventScript_MomNoMovesToRelearn::
 	msgbox PokemonCenter_Text_MomNoMoves, MSGBOX_DEFAULT
+	goto PokemonCenter_EventScript_MomMoveRelearner
+	end
+
+@ ---- An Egg was picked: say so and let the player pick again for the same service ----
+PokemonCenter_EventScript_MomHyperTrainingEgg::
+	msgbox PokemonCenter_Text_MomEgg, MSGBOX_DEFAULT
+	goto PokemonCenter_EventScript_MomHyperTraining
+	end
+
+PokemonCenter_EventScript_MomNatureEgg::
+	msgbox PokemonCenter_Text_MomEgg, MSGBOX_DEFAULT
+	goto PokemonCenter_EventScript_MomNature
+	end
+
+PokemonCenter_EventScript_MomAbilityEgg::
+	msgbox PokemonCenter_Text_MomEgg, MSGBOX_DEFAULT
+	goto PokemonCenter_EventScript_MomAbility
+	end
+
+PokemonCenter_EventScript_MomHiddenPowerEgg::
+	msgbox PokemonCenter_Text_MomEgg, MSGBOX_DEFAULT
+	goto PokemonCenter_EventScript_MomHiddenPower
+	end
+
+PokemonCenter_EventScript_MomResetEVsEgg::
+	msgbox PokemonCenter_Text_MomEgg, MSGBOX_DEFAULT
+	goto PokemonCenter_EventScript_MomResetEVs
+	end
+
+PokemonCenter_EventScript_MomMoveRelearnerEgg::
+	msgbox PokemonCenter_Text_MomEgg, MSGBOX_DEFAULT
 	goto PokemonCenter_EventScript_MomMoveRelearner
 	end
 
