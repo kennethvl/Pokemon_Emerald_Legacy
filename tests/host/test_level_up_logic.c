@@ -143,20 +143,18 @@ static void TestExpAwards(void)
     // Base EXP does not depend on the receiving Pokemon's level (no level-difference scaling).
     CHECK_EQ(ExpLogic_BaseExp(64, 50), 64 * 50 / 7);
     CHECK_EQ(ExpLogic_BaseExp(1, 1), 0);
-    CHECK_EQ(ExpLogic_Award(ExpLogic_BaseExp(1, 1), 1, 0, 0, 0), 1); // never zero
+    CHECK_EQ(ExpLogic_Award(ExpLogic_BaseExp(1, 1), 0, 0, 0), 1); // never zero
 
-    // Participants get the full amount, everyone else half.
-    CHECK_EQ(ExpLogic_Award(100, 1, 0, 0, 0), 100);
-    CHECK_EQ(ExpLogic_Award(100, 0, 0, 0, 0), 50);
-    CHECK_EQ(ExpLogic_Award(101, 0, 0, 0, 0), 50);
-    CHECK_EQ(ExpLogic_Award(1, 0, 0, 0, 0), 1);   // half of 1 still awards 1
-    CHECK_EQ(ExpLogic_Award(0, 0, 0, 0, 0), 1);
+    // Every eligible party member gets the full amount.
+    CHECK_EQ(ExpLogic_Award(100, 0, 0, 0), 100);
+    CHECK_EQ(ExpLogic_Award(101, 0, 0, 0), 101);
+    CHECK_EQ(ExpLogic_Award(0, 0, 0, 0), 1);
 
-    // Modifiers are 1.5x each and apply on top of the participant/share split.
-    CHECK_EQ(ExpLogic_Award(100, 1, 1, 0, 0), 150);
-    CHECK_EQ(ExpLogic_Award(100, 1, 0, 1, 0), 150);
-    CHECK_EQ(ExpLogic_Award(100, 1, 0, 0, 1), 150);
-    CHECK_EQ(ExpLogic_Award(100, 0, 1, 1, 1), 50 * 150 / 100 * 150 / 100 * 150 / 100);
+    // Modifiers are 1.5x each and apply in sequence.
+    CHECK_EQ(ExpLogic_Award(100, 1, 0, 0), 150);
+    CHECK_EQ(ExpLogic_Award(100, 0, 1, 0), 150);
+    CHECK_EQ(ExpLogic_Award(100, 0, 0, 1), 150);
+    CHECK_EQ(ExpLogic_Award(100, 1, 1, 1), 100 * 150 / 100 * 150 / 100 * 150 / 100);
 
     // Who may gain EXP: alive, below max level, not level-capped.
     CHECK(ExpLogic_CanGainExp(1, 50, 100, 0));

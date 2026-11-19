@@ -32,9 +32,9 @@ unsigned short LevelMoveCursor_Next(struct LevelMoveCursor *cursor, const unsign
 
 // Gen VI style base EXP: no level-difference scaling.
 unsigned short ExpLogic_BaseExp(unsigned short expYield, unsigned char defeatedLevel);
-// EXP for one party member. Participants receive the full amount, everyone else half (min 1).
+// EXP for one party member. Every eligible member receives the full amount (min 1).
 // Modifiers (Lucky Egg, trainer battle, traded Pokemon) are each x1.5 and applied in sequence.
-unsigned int ExpLogic_Award(unsigned short baseExp, unsigned char isParticipant, unsigned char hasLuckyEgg,
+unsigned int ExpLogic_Award(unsigned short baseExp, unsigned char hasLuckyEgg,
                             unsigned char isTrainerBattle, unsigned char isTradedBoost);
 // A Pokemon can gain EXP only if it is alive, below max level and not held back by a level cap.
 unsigned char ExpLogic_CanGainExp(unsigned char isAlive, unsigned char level, unsigned char maxLevel, unsigned char isLevelCapped);

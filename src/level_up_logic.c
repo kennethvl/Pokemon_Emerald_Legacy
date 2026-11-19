@@ -34,19 +34,13 @@ unsigned short ExpLogic_BaseExp(unsigned short expYield, unsigned char defeatedL
     return (unsigned short)(expYield * defeatedLevel / 7);
 }
 
-unsigned int ExpLogic_Award(unsigned short baseExp, unsigned char isParticipant, unsigned char hasLuckyEgg,
+unsigned int ExpLogic_Award(unsigned short baseExp, unsigned char hasLuckyEgg,
                             unsigned char isTrainerBattle, unsigned char isTradedBoost)
 {
     unsigned int exp = baseExp;
 
     if (exp == 0)
         exp = 1;
-    if (!isParticipant)
-    {
-        exp /= 2;
-        if (exp == 0)
-            exp = 1;
-    }
     if (hasLuckyEgg)
         exp = exp * 150 / 100;
     if (isTrainerBattle)
