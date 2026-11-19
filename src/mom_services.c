@@ -303,6 +303,17 @@ void MomApplyEVReset(void)
     CalculateMonStats(mon);
 }
 
+// Mom's Move Relearner offers Egg moves as well as level-up moves; the menu turns this off again.
+void MomEnableEggMovesRelearner(void)
+{
+    gRelearnerIncludesEggMoves = TRUE;
+}
+
+void MomDisableEggMovesRelearner(void)
+{
+    gRelearnerIncludesEggMoves = FALSE;
+}
+
 // Charges VAR_0x8006 money. VAR_RESULT = TRUE if the player could pay (and was charged).
 void MomPayForService(void)
 {

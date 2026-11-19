@@ -555,3 +555,5 @@ gSpecials::
 	def_special MomPayForService
 	def_special MomBufferEVReset
 	def_special MomApplyEVReset
+	def_special MomEnableEggMovesRelearner
+	def_special MomDisableEggMovesRelearner

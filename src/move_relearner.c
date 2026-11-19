@@ -158,7 +158,8 @@ enum {
 #define GFXTAG_UI       5525
 #define PALTAG_UI       5526
 
-#define MAX_RELEARNER_MOVES max(MAX_LEVEL_UP_MOVES, 25)
+// Level-up + Egg moves (Mom's relearner) + CANCEL
+#define MAX_RELEARNER_MOVES (MAX_LEVEL_UP_MOVES + EGG_MOVES_ARRAY_COUNT + 1)
 
 static EWRAM_DATA struct
 {
@@ -901,7 +902,9 @@ static void CreateLearnableMovesList(void)
     s32 i;
     u8 nickname[POKEMON_NAME_LENGTH + 1];
 
-    if (FlagGet(FLAG_EGG_MOVES_TUTOR))
+    if (gRelearnerIncludesEggMoves)
+        sMoveRelearnerStruct->numMenuChoices = GetRelearnerMovesWithEggMoves(&gPlayerParty[sMoveRelearnerStruct->partyMon], sMoveRelearnerStruct->movesToLearn);
+    else if (FlagGet(FLAG_EGG_MOVES_TUTOR))
         sMoveRelearnerStruct->numMenuChoices = GetEggMoves(&gPlayerParty[sMoveRelearnerStruct->partyMon], sMoveRelearnerStruct->movesToLearn);
     else
         sMoveRelearnerStruct->numMenuChoices = GetMoveRelearnerMoves(&gPlayerParty[sMoveRelearnerStruct->partyMon], sMoveRelearnerStruct->movesToLearn);

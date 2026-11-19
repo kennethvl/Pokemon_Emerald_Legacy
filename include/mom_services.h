@@ -15,6 +15,8 @@ void MomApplyHiddenPowerChange(void);
 void MomBufferEVReset(void);
 void MomApplyEVReset(void);
 void MomPayForService(void);
+void MomEnableEggMovesRelearner(void);
+void MomDisableEggMovesRelearner(void);
 
 // Hidden Power can be any type except Normal and ??? (see sHiddenPowerTypes in mom_services.c).
 #define MOM_NUM_HIDDEN_POWER_TYPES 16

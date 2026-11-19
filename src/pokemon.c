@@ -78,6 +78,8 @@ static u8 CopyMonToPC(struct Pokemon *mon);
 EWRAM_DATA static struct LevelMoveCursor sLearningMoveCursor = {0};
 EWRAM_DATA u8 gPlayerPartyCount = 0;
 EWRAM_DATA u8 gEnemyPartyCount = 0;
+// Set by Mom's Move Relearner: the relearner offers both level-up and Egg moves.
+EWRAM_DATA bool8 gRelearnerIncludesEggMoves = FALSE;
 EWRAM_DATA struct Pokemon gPlayerParty[PARTY_SIZE] = {0};
 EWRAM_DATA struct Pokemon gEnemyParty[PARTY_SIZE] = {0};
 EWRAM_DATA struct SpriteTemplate gMultiuseSpriteTemplate = {0};
@@ -6406,6 +6408,29 @@ u8 GetMoveRelearnerMoves(struct Pokemon *mon, u16 *moves)
     return numMoves;
 }
 
+// Level-up moves the Pokémon can relearn, followed by its Egg moves that it doesn't already know.
+// `moves` must hold MAX_LEVEL_UP_MOVES + EGG_MOVES_ARRAY_COUNT entries.
+u8 GetRelearnerMovesWithEggMoves(struct Pokemon *mon, u16 *moves)
+{
+    u16 eggMoves[EGG_MOVES_ARRAY_COUNT];
+    u8 numMoves = GetMoveRelearnerMoves(mon, moves);
+    u8 numEggMoves = GetEggMoves(mon, eggMoves);
+    u8 i, j;
+
+    for (i = 0; i < numEggMoves; i++)
+    {
+        for (j = 0; j < MAX_MON_MOVES && GetMonData(mon, MON_DATA_MOVE1 + j) != eggMoves[i]; j++)
+            ;
+        if (j < MAX_MON_MOVES)
+            continue;
+        for (j = 0; j < numMoves && moves[j] != eggMoves[i]; j++)
+            ;
+        if (j == numMoves)
+            moves[numMoves++] = eggMoves[i];
+    }
+    return numMoves;
+}
+
 u8 GetLevelUpMovesBySpecies(u16 species, u16 *moves)
 {
     u8 numMoves = 0;
@@ -6438,6 +6463,13 @@ u8 GetNumberOfRelearnableMoves(struct Pokemon *mon)
 
     if (species == SPECIES_EGG)
         return 0;
+
+    if (gRelearnerIncludesEggMoves)
+    {
+        u16 allMoves[MAX_LEVEL_UP_MOVES + EGG_MOVES_ARRAY_COUNT];
+
+        return GetRelearnerMovesWithEggMoves(mon, allMoves);
+    }
 
     for (i = 0; i < MAX_MON_MOVES; i++)
         learnedMoves[i] = GetMonData(mon, MON_DATA_MOVE1 + i, 0);

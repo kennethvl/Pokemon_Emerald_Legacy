@@ -1,6 +1,6 @@
 @ Mom, found in every Pokémon Center (after receiving the POKéDEX, and not in HARD / NUZLOCKE mode).
 @ She offers the free "modifier" services: Hyper Training, Nature, Ability and Hidden Power type changes,
-@ EV reset and the Move Relearner.
+@ EV reset and the Move Relearner (level-up and Egg moves).
 
 @ Called from every Pokémon Center's OnTransition. FLAG_TEMP_10 hides Mom and is cleared on every map load.
 PokemonCenter_EventScript_UpdateMom::
@@ -19,6 +19,7 @@ PokemonCenter_EventScript_Mom::
 	faceplayer
 	msgbox PokemonCenter_Text_MomWelcome, MSGBOX_DEFAULT
 PokemonCenter_EventScript_MomMenu::
+	special MomDisableEggMovesRelearner
 	message PokemonCenter_Text_MomWhatCanIDo
 	waitmessage
 	multichoice 0, 0, MULTI_PKMN_CENTER_MOM, FALSE
@@ -184,9 +185,10 @@ PokemonCenter_EventScript_MomNoEVs::
 	goto PokemonCenter_EventScript_MomMenu
 	end
 
-@ ---- Move Relearner: reteach level-up moves (free, no HEART SCALE) ----
+@ ---- Move Relearner: reteach level-up moves and teach Egg moves (free, no HEART SCALE) ----
 PokemonCenter_EventScript_MomMoveRelearner::
 	clearflag FLAG_EGG_MOVES_TUTOR
+	special MomEnableEggMovesRelearner
 	msgbox PokemonCenter_Text_MomWhichMon, MSGBOX_DEFAULT
 	special ChooseMonForMoveRelearner
 	waitstate
@@ -208,6 +210,7 @@ PokemonCenter_EventScript_MomNoMovesToRelearn::
 	end
 
 PokemonCenter_EventScript_MomGoodbye::
+	special MomDisableEggMovesRelearner
 	msgbox PokemonCenter_Text_MomGoodbye, MSGBOX_DEFAULT
 	release
 	end
