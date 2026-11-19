@@ -43,6 +43,7 @@
 #define SCROLL_MULTI_BF_EXCHANGE_CORNER_BERRY_VENDOR      13
 #define SCROLL_MULTI_MOM_NATURES                          14 // options come from MomGetScrollOptionText
 #define SCROLL_MULTI_MOM_HP_TYPES                         15 // options come from MomGetScrollOptionText
+#define SCROLL_MULTI_MOM_MAIN                             16 // Mom's service menu
 
 #define MAX_SCROLL_MULTI_ON_SCREEN 6
 #define MAX_SCROLL_MULTI_LENGTH 16

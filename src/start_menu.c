@@ -82,7 +82,8 @@ bool8 (*gMenuCallback)(void);
 // EWRAM
 EWRAM_DATA static u8 sSafariBallsWindowId = 0;
 EWRAM_DATA static u8 sBattlePyramidFloorWindowId = 0;
-EWRAM_DATA static u8 sStartMenuCursorPos = 0;
+EWRAM_DATA static u8 sStartMenuCursorPos = 0; // absolute index into sCurrentStartMenuActions
+EWRAM_DATA static u8 sStartMenuScrollOffset = 0; // first action shown when the menu scrolls
 EWRAM_DATA static u8 sNumStartMenuActions = 0;
 EWRAM_DATA static u8 sCurrentStartMenuActions[9] = {0};
 EWRAM_DATA static s8 sInitStartMenuData[2] = {0};
@@ -452,24 +453,50 @@ static void RemoveExtraStartMenuWindows(void)
     }
 }
 
+// The menu shows at most this many actions (the normal menu without STORAGE); the rest scroll into view.
+#define START_MENU_MAX_VISIBLE 8
+
+static u8 GetStartMenuVisibleCount(void)
+{
+    return sNumStartMenuActions < START_MENU_MAX_VISIBLE ? sNumStartMenuActions : START_MENU_MAX_VISIBLE;
+}
+
+// Keeps sStartMenuCursorPos valid and inside the visible part of the menu.
+static void ClampStartMenuScroll(void)
+{
+    u8 visible = GetStartMenuVisibleCount();
+
+    if (sStartMenuCursorPos >= sNumStartMenuActions)
+        sStartMenuCursorPos = 0;
+    if (sStartMenuCursorPos < sStartMenuScrollOffset)
+        sStartMenuScrollOffset = sStartMenuCursorPos;
+    else if (sStartMenuCursorPos >= sStartMenuScrollOffset + visible)
+        sStartMenuScrollOffset = sStartMenuCursorPos - visible + 1;
+    if (sStartMenuScrollOffset > sNumStartMenuActions - visible)
+        sStartMenuScrollOffset = sNumStartMenuActions - visible;
+}
+
+// *pIndex is the row on screen; the action printed there is row + sStartMenuScrollOffset.
 static bool32 PrintStartMenuActions(s8 *pIndex, u32 count)
 {
     s8 index = *pIndex;
 
     do
     {
-        if (sStartMenuItems[sCurrentStartMenuActions[index]].func.u8_void == StartMenuPlayerNameCallback)
+        u8 action = sCurrentStartMenuActions[index + sStartMenuScrollOffset];
+
+        if (sStartMenuItems[action].func.u8_void == StartMenuPlayerNameCallback)
         {
-            PrintPlayerNameOnWindow(GetStartMenuWindowId(), sStartMenuItems[sCurrentStartMenuActions[index]].text, 8, (index << 4) + 9);
+            PrintPlayerNameOnWindow(GetStartMenuWindowId(), sStartMenuItems[action].text, 8, (index << 4) + 9);
         }
         else
         {
-            StringExpandPlaceholders(gStringVar4, sStartMenuItems[sCurrentStartMenuActions[index]].text);
+            StringExpandPlaceholders(gStringVar4, sStartMenuItems[action].text);
             AddTextPrinterParameterized(GetStartMenuWindowId(), FONT_NORMAL, gStringVar4, 8, (index << 4) + 9, TEXT_SKIP_DRAW, NULL);
         }
 
         index++;
-        if (index >= sNumStartMenuActions)
+        if (index >= GetStartMenuVisibleCount())
         {
             *pIndex = index;
             return TRUE;
@@ -494,11 +521,12 @@ static bool32 InitStartMenuStep(void)
         break;
     case 1:
         BuildStartMenuActions();
+        ClampStartMenuScroll();
         sInitStartMenuData[0]++;
         break;
     case 2:
         LoadMessageBoxAndBorderGfx();
-        DrawStdWindowFrame(AddStartMenuWindow(sNumStartMenuActions), FALSE);
+        DrawStdWindowFrame(AddStartMenuWindow(GetStartMenuVisibleCount()), FALSE);
         sInitStartMenuData[1] = 0;
         sInitStartMenuData[0]++;
         break;
@@ -514,7 +542,7 @@ static bool32 InitStartMenuStep(void)
             sInitStartMenuData[0]++;
         break;
     case 5:
-        sStartMenuCursorPos = InitMenuNormal(GetStartMenuWindowId(), FONT_NORMAL, 0, 9, 16, sNumStartMenuActions, sStartMenuCursorPos);
+        InitMenuNormal(GetStartMenuWindowId(), FONT_NORMAL, 0, 9, 16, GetStartMenuVisibleCount(), sStartMenuCursorPos - sStartMenuScrollOffset);
         CopyWindowToVram(GetStartMenuWindowId(), COPYWIN_MAP);
         return TRUE;
     }
@@ -606,18 +634,47 @@ static bool8 StartMenuHasStorage(void)
     return FALSE;
 }
 
+// Moves the cursor by delta (wrapping around). If the menu is longer than the window, the list scrolls
+// so the cursor stays visible.
+static void MoveStartMenuCursor(s8 delta)
+{
+    u8 visible = GetStartMenuVisibleCount();
+    u8 oldOffset = sStartMenuScrollOffset;
+    s8 row;
+
+    if (sNumStartMenuActions <= visible)
+    {
+        sStartMenuCursorPos = Menu_MoveCursor(delta);
+        return;
+    }
+
+    sStartMenuCursorPos = (sStartMenuCursorPos + sNumStartMenuActions + delta) % sNumStartMenuActions;
+    ClampStartMenuScroll();
+    if (sStartMenuScrollOffset == oldOffset)
+    {
+        Menu_MoveCursorNoWrapAround(delta);
+        return;
+    }
+
+    FillWindowPixelBuffer(GetStartMenuWindowId(), PIXEL_FILL(1));
+    row = 0;
+    PrintStartMenuActions(&row, visible);
+    InitMenuNormal(GetStartMenuWindowId(), FONT_NORMAL, 0, 9, 16, visible, sStartMenuCursorPos - sStartMenuScrollOffset);
+    CopyWindowToVram(GetStartMenuWindowId(), COPYWIN_GFX);
+}
+
 static bool8 HandleStartMenuInput(void)
 {
     if (JOY_NEW(DPAD_UP))
     {
         PlaySE(SE_SELECT);
-        sStartMenuCursorPos = Menu_MoveCursor(-1);
+        MoveStartMenuCursor(-1);
     }
 
     if (JOY_NEW(DPAD_DOWN))
     {
         PlaySE(SE_SELECT);
-        sStartMenuCursorPos = Menu_MoveCursor(1);
+        MoveStartMenuCursor(1);
     }
 
     if (JOY_NEW(A_BUTTON))

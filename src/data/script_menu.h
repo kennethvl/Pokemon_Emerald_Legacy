@@ -615,13 +615,6 @@ static const struct MenuAction MultichoiceList_FossilPostGame[] =
     {gText_Exit},
 };
 
-static const u8 sText_MomHyperTraining[] = _("HYPER TRAINING");
-static const u8 sText_MomNature[] = _("NATURE");
-static const u8 sText_MomAbility[] = _("ABILITY");
-static const u8 sText_MomHiddenPower[] = _("HIDDEN POWER");
-static const u8 sText_MomMaxEVs[] = _("MAX EVs");
-static const u8 sText_MomRelearnMoves[] = _("RELEARN MOVES");
-
 static const u8 sText_MomAllStats[] = _("ALL STATS");
 static const u8 sText_MomHp[] = _("HP");
 static const u8 sText_MomAttack[] = _("ATTACK");
@@ -639,17 +632,6 @@ static const struct MenuAction MultichoiceList_MomHyperTraining[] =
     {sText_MomSpAtk},
     {sText_MomSpDef},
     {sText_MomSpeed},
-    {gText_Cancel},
-};
-
-static const struct MenuAction MultichoiceList_PkmnCenterMom[] =
-{
-    {sText_MomHyperTraining},
-    {sText_MomNature},
-    {sText_MomAbility},
-    {sText_MomHiddenPower},
-    {sText_MomMaxEVs},
-    {sText_MomRelearnMoves},
     {gText_Cancel},
 };
 
@@ -947,7 +929,6 @@ static const struct MultichoiceListStruct sMultichoiceLists[] =
     [MULTI_SLATEPORT_TENT_RULES]       = MULTICHOICE(MultichoiceList_SlateportTentRules),
     [MULTI_FALLARBOR_TENT_RULES]       = MULTICHOICE(MultichoiceList_FallarborTentRules),
     [MULTI_TAG_MATCH_TYPE]             = MULTICHOICE(MultichoiceList_TagMatchType),
-    [MULTI_PKMN_CENTER_MOM]            = MULTICHOICE(MultichoiceList_PkmnCenterMom),
     [MULTI_MOM_HYPER_TRAINING]         = MULTICHOICE(MultichoiceList_MomHyperTraining),
 };
 

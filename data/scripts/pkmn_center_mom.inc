@@ -24,7 +24,9 @@ PokemonCenter_EventScript_MomMenu::
 	special MomDisableEggMovesRelearner
 	message PokemonCenter_Text_MomWhatCanIDo
 	waitmessage
-	multichoice 0, 0, MULTI_PKMN_CENTER_MOM, FALSE
+	setvar VAR_0x8004, SCROLL_MULTI_MOM_MAIN
+	special ShowScrollableMultichoice
+	waitstate
 	switch VAR_RESULT
 	case 0, PokemonCenter_EventScript_MomHyperTraining
 	case 1, PokemonCenter_EventScript_MomNature

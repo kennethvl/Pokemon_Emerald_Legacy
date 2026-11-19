@@ -2442,6 +2442,16 @@ void ShowScrollableMultichoice(void)
         task->tKeepOpenAfterSelect = FALSE;
         task->tTaskId = taskId;
         break;
+    case SCROLL_MULTI_MOM_MAIN:
+        task->tMaxItemsOnScreen = 5;
+        task->tNumItems = 7;
+        task->tLeft = 1;
+        task->tTop = 1;
+        task->tWidth = 14;
+        task->tHeight = 10;
+        task->tKeepOpenAfterSelect = FALSE;
+        task->tTaskId = taskId;
+        break;
     case SCROLL_MULTI_BATTLE_TENT_RULES:
         task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;
         task->tNumItems = 7;
@@ -2458,6 +2468,13 @@ void ShowScrollableMultichoice(void)
         break;
     }
 }
+
+static const u8 sText_MomHyperTraining[] = _("HYPER TRAINING");
+static const u8 sText_MomNature[] = _("NATURE");
+static const u8 sText_MomAbility[] = _("ABILITY");
+static const u8 sText_MomHiddenPower[] = _("HIDDEN POWER");
+static const u8 sText_MomMaxEVs[] = _("MAX EVs");
+static const u8 sText_MomRelearnMoves[] = _("RELEARN MOVES");
 
 static const u8 *const sScrollableMultichoiceOptions[][MAX_SCROLL_MULTI_LENGTH] =
 {
@@ -2629,6 +2646,17 @@ static const u8 *const sScrollableMultichoiceOptions[][MAX_SCROLL_MULTI_LENGTH] 
         gText_Underpowered,
         gText_WhenInDanger,
         gText_Exit
+    },
+    // Order matches the switch in PokemonCenter_EventScript_MomMenu
+    [SCROLL_MULTI_MOM_MAIN] =
+    {
+        sText_MomHyperTraining,
+        sText_MomNature,
+        sText_MomAbility,
+        sText_MomHiddenPower,
+        sText_MomMaxEVs,
+        sText_MomRelearnMoves,
+        gText_Cancel
     }
 };
 
