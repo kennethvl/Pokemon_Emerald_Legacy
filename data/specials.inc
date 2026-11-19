@@ -559,3 +559,4 @@ gSpecials::
 	def_special MomDisableEggMovesRelearner
 	def_special MomShowGreeting
 	def_special MomShowGoodbye
+	def_special MomBufferCurrentNature

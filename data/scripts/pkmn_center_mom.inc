@@ -78,6 +78,7 @@ PokemonCenter_EventScript_MomNature::
 	goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, PokemonCenter_EventScript_MomMenu
 	special MomCanModifyPartyMon
 	goto_if_eq VAR_RESULT, FALSE, PokemonCenter_EventScript_MomNatureEgg
+	special MomBufferCurrentNature
 	message PokemonCenter_Text_MomWhichNature
 	waitmessage
 	copyvar VAR_0x8007, VAR_0x8004
@@ -288,6 +289,7 @@ PokemonCenter_Text_MomAbilityDone:
 	.string "{STR_VAR_3}, dear!$"
 
 PokemonCenter_Text_MomWhichNature:
+	.string "{STR_VAR_1}: {STR_VAR_2}\n"
 	.string "Which nature would you like?$"
 
 PokemonCenter_Text_MomNatureConfirm:

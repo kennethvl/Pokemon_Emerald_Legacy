@@ -10,6 +10,7 @@ void MomBufferAbilityChange(void);
 void MomApplyAbilityChange(void);
 void MomBufferNatureChange(void);
 void MomApplyNatureChange(void);
+void MomBufferCurrentNature(void);
 void MomBufferHiddenPowerChange(void);
 void MomApplyHiddenPowerChange(void);
 void MomBufferMaxEVs(void);

@@ -200,6 +200,16 @@ static void BuildNatureOptionText(u8 nature)
     StringCopy(str, sNatureStatNames[down]);
 }
 
+// Input: VAR_0x8004 = party slot. Output: STR_VAR_2 = the nature its stats currently follow, with its effect
+// (e.g. "ADAMANT +ATK -SP.ATK").
+void MomBufferCurrentNature(void)
+{
+    u8 nature = GetMonStatNature(SERVICE_MON);
+
+    BuildNatureOptionText(nature);
+    StringCopy(gStringVar2, sNatureOptionText[nature]);
+}
+
 // ---- Hidden Power type change (bypasses the IV-derived type) ----
 
 static const u8 sHiddenPowerTypes[MOM_NUM_HIDDEN_POWER_TYPES] =
