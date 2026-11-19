@@ -21,6 +21,7 @@
 #include "link.h"
 #include "load_save.h"
 #include "main.h"
+#include "list_menu.h"
 #include "menu.h"
 #include "new_game.h"
 #include "option_menu.h"
@@ -83,7 +84,8 @@ bool8 (*gMenuCallback)(void);
 EWRAM_DATA static u8 sSafariBallsWindowId = 0;
 EWRAM_DATA static u8 sBattlePyramidFloorWindowId = 0;
 EWRAM_DATA static u8 sStartMenuCursorPos = 0; // absolute index into sCurrentStartMenuActions
-EWRAM_DATA static u8 sStartMenuScrollOffset = 0; // first action shown when the menu scrolls
+EWRAM_DATA static u16 sStartMenuScrollOffset = 0; // first action shown when the menu scrolls (u16: read by the scroll arrows)
+EWRAM_DATA static u8 sStartMenuArrowsTaskIdPlus1 = 0; // scroll arrows task id + 1, or 0 if there are none
 EWRAM_DATA static u8 sNumStartMenuActions = 0;
 EWRAM_DATA static u8 sCurrentStartMenuActions[9] = {0};
 EWRAM_DATA static s8 sInitStartMenuData[2] = {0};
@@ -252,6 +254,7 @@ static void BuildMultiPartnerRoomStartMenu(void);
 static void ShowSafariBallsWindow(void);
 static void ShowPyramidFloorWindow(void);
 static void RemoveExtraStartMenuWindows(void);
+static void RemoveStartMenuScrollArrows(void);
 static bool32 PrintStartMenuActions(s8 *pIndex, u32 count);
 static bool32 InitStartMenuStep(void);
 static void InitStartMenu(void);
@@ -440,6 +443,7 @@ static void ShowPyramidFloorWindow(void)
 
 static void RemoveExtraStartMenuWindows(void)
 {
+    RemoveStartMenuScrollArrows();
     if (GetSafariZoneFlag())
     {
         ClearStdWindowAndFrameToTransparent(sSafariBallsWindowId, FALSE);
@@ -474,6 +478,42 @@ static void ClampStartMenuScroll(void)
         sStartMenuScrollOffset = sStartMenuCursorPos - visible + 1;
     if (sStartMenuScrollOffset > sNumStartMenuActions - visible)
         sStartMenuScrollOffset = sNumStartMenuActions - visible;
+}
+
+#define GFXTAG_START_MENU_SCROLL_ARROWS 2010
+#define PALTAG_START_MENU_SCROLL_ARROWS 2010
+
+// Up/down arrows on the pause menu when it has more actions than fit (shown/hidden by the arrows task as it
+// reads sStartMenuScrollOffset). Every way out of the menu removes them via RemoveStartMenuScrollArrows.
+static void AddStartMenuScrollArrows(void)
+{
+    struct ScrollArrowsTemplate template =
+    {
+        .firstArrowType = SCROLL_ARROW_UP,
+        .firstX = 204,
+        .firstY = 8,
+        .secondArrowType = SCROLL_ARROW_DOWN,
+        .secondX = 204,
+        .secondY = (START_MENU_MAX_VISIBLE * 2 + 1) * 8 + 2,
+        .fullyUpThreshold = 0,
+        .fullyDownThreshold = 0,
+        .tileTag = GFXTAG_START_MENU_SCROLL_ARROWS,
+        .palTag = PALTAG_START_MENU_SCROLL_ARROWS,
+        .palNum = 0,
+    };
+
+    if (sStartMenuArrowsTaskIdPlus1 != 0 || sNumStartMenuActions <= START_MENU_MAX_VISIBLE)
+        return;
+    template.fullyDownThreshold = sNumStartMenuActions - START_MENU_MAX_VISIBLE;
+    sStartMenuArrowsTaskIdPlus1 = AddScrollIndicatorArrowPair(&template, &sStartMenuScrollOffset) + 1;
+}
+
+static void RemoveStartMenuScrollArrows(void)
+{
+    if (sStartMenuArrowsTaskIdPlus1 == 0)
+        return;
+    RemoveScrollIndicatorArrowPair(sStartMenuArrowsTaskIdPlus1 - 1);
+    sStartMenuArrowsTaskIdPlus1 = 0;
 }
 
 // *pIndex is the row on screen; the action printed there is row + sStartMenuScrollOffset.
@@ -543,6 +583,7 @@ static bool32 InitStartMenuStep(void)
         break;
     case 5:
         InitMenuNormal(GetStartMenuWindowId(), FONT_NORMAL, 0, 9, 16, GetStartMenuVisibleCount(), sStartMenuCursorPos - sStartMenuScrollOffset);
+        AddStartMenuScrollArrows();
         CopyWindowToVram(GetStartMenuWindowId(), COPYWIN_MAP);
         return TRUE;
     }
@@ -1089,6 +1130,7 @@ static bool8 SaveErrorTimer(void)
 
 static u8 SaveConfirmSaveCallback(void)
 {
+    RemoveStartMenuScrollArrows();
     ClearStdWindowAndFrame(GetStartMenuWindowId(), FALSE);
     RemoveStartMenuWindow();
     ShowSaveInfoWindow();
@@ -1266,6 +1308,7 @@ static void InitBattlePyramidRetire(void)
 
 static u8 BattlePyramidConfirmRetireCallback(void)
 {
+    RemoveStartMenuScrollArrows();
     ClearStdWindowAndFrame(GetStartMenuWindowId(), FALSE);
     RemoveStartMenuWindow();
     ShowSaveMessage(gText_BattlePyramidConfirmRetire, BattlePyramidRetireYesNoCallback);
@@ -1521,6 +1564,7 @@ void SaveForBattleTowerLink(void)
 
 static void HideStartMenuWindow(void)
 {
+    RemoveStartMenuScrollArrows();
     ClearStdWindowAndFrame(GetStartMenuWindowId(), TRUE);
     RemoveStartMenuWindow();
     ScriptUnfreezeObjectEvents();
