@@ -98,3 +98,35 @@ unsigned char ModLogic_MomDialogueStage(unsigned char numBadges, unsigned char b
         return MODLOGIC_MOM_STAGE_BADGES;
     return MODLOGIC_MOM_STAGE_FRESH;
 }
+
+static unsigned char AllAtLeast(const unsigned char *values, unsigned char max)
+{
+    unsigned char i;
+
+    for (i = 0; i < 6; i++)
+    {
+        if (values[i] < max)
+            return 0;
+    }
+    return 1;
+}
+
+unsigned char ModLogic_MomServiceIsUseless(unsigned char service, unsigned char isEgg,
+                                           const unsigned char *ivs, unsigned char maxIV,
+                                           const unsigned char *evs, unsigned char maxEV,
+                                           unsigned char ability0, unsigned char ability1)
+{
+    if (isEgg)
+        return 1;
+    switch (service)
+    {
+    case MODLOGIC_MOM_SERVICE_HYPER_TRAINING:
+        return AllAtLeast(ivs, maxIV);
+    case MODLOGIC_MOM_SERVICE_MAX_EVS:
+        return AllAtLeast(evs, maxEV);
+    case MODLOGIC_MOM_SERVICE_ABILITY:
+        return !ModLogic_CanSwapAbility(ability0, ability1);
+    default:
+        return 0;
+    }
+}

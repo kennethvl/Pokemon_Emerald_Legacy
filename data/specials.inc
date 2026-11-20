@@ -543,20 +543,8 @@ gSpecials::
 	def_special CheckFoundAllKecleon
 	def_special CheckGotAllKantoStarters
 	def_special UpdateGymLeaderRematch
-	def_special MomCanModifyPartyMon
-	def_special MomBufferHyperTraining
-	def_special MomApplyHyperTraining
-	def_special MomBufferAbilityChange
-	def_special MomApplyAbilityChange
-	def_special MomBufferNatureChange
-	def_special MomApplyNatureChange
-	def_special MomBufferHiddenPowerChange
-	def_special MomApplyHiddenPowerChange
-	def_special MomPayForService
-	def_special MomBufferMaxEVs
-	def_special MomApplyMaxEVs
 	def_special MomEnableEggMovesRelearner
 	def_special MomDisableEggMovesRelearner
 	def_special MomShowGreeting
 	def_special MomShowGoodbye
-	def_special MomBufferCurrentNature
+	def_special MomOpenPC

@@ -140,6 +140,32 @@ static void TestAbility(void)
     CHECK_EQ(ModLogic_OtherAbilitySlot(1), 0);
 }
 
+static void TestMomServiceIsUseless(void)
+{
+    const unsigned char perfect[6] = {31, 31, 31, 31, 31, 31};
+    const unsigned char oneLow[6]  = {31, 31, 31, 30, 31, 31};
+    const unsigned char maxEVs[6]  = {255, 255, 255, 255, 255, 255};
+    const unsigned char someEVs[6] = {255, 255, 0, 255, 255, 255};
+
+    // Hyper Training: useless only when every IV is maxed
+    CHECK_EQ(ModLogic_MomServiceIsUseless(MODLOGIC_MOM_SERVICE_HYPER_TRAINING, 0, perfect, 31, someEVs, 255, 1, 2), 1);
+    CHECK_EQ(ModLogic_MomServiceIsUseless(MODLOGIC_MOM_SERVICE_HYPER_TRAINING, 0, oneLow, 31, maxEVs, 255, 1, 2), 0);
+    // Max EVs: useless only when every EV is maxed
+    CHECK_EQ(ModLogic_MomServiceIsUseless(MODLOGIC_MOM_SERVICE_MAX_EVS, 0, oneLow, 31, maxEVs, 255, 1, 2), 1);
+    CHECK_EQ(ModLogic_MomServiceIsUseless(MODLOGIC_MOM_SERVICE_MAX_EVS, 0, perfect, 31, someEVs, 255, 1, 2), 0);
+    // Ability: useless with a single ability (or two identical ones)
+    CHECK_EQ(ModLogic_MomServiceIsUseless(MODLOGIC_MOM_SERVICE_ABILITY, 0, oneLow, 31, someEVs, 255, 65, 0), 1);
+    CHECK_EQ(ModLogic_MomServiceIsUseless(MODLOGIC_MOM_SERVICE_ABILITY, 0, oneLow, 31, someEVs, 255, 65, 65), 1);
+    CHECK_EQ(ModLogic_MomServiceIsUseless(MODLOGIC_MOM_SERVICE_ABILITY, 0, perfect, 31, maxEVs, 255, 65, 34), 0);
+    // Nature, Hidden Power and Relearn Moves are never dimmed by this rule
+    CHECK_EQ(ModLogic_MomServiceIsUseless(MODLOGIC_MOM_SERVICE_NATURE, 0, perfect, 31, maxEVs, 255, 65, 0), 0);
+    CHECK_EQ(ModLogic_MomServiceIsUseless(MODLOGIC_MOM_SERVICE_HIDDEN_POWER, 0, perfect, 31, maxEVs, 255, 65, 0), 0);
+    CHECK_EQ(ModLogic_MomServiceIsUseless(MODLOGIC_MOM_SERVICE_RELEARN_MOVES, 0, perfect, 31, maxEVs, 255, 65, 0), 0);
+    // Eggs: always useless
+    CHECK_EQ(ModLogic_MomServiceIsUseless(MODLOGIC_MOM_SERVICE_NATURE, 1, oneLow, 31, someEVs, 255, 65, 34), 1);
+    CHECK_EQ(ModLogic_MomServiceIsUseless(MODLOGIC_MOM_SERVICE_RELEARN_MOVES, 1, oneLow, 31, someEVs, 255, 65, 34), 1);
+}
+
 static void TestMomDialogueStage(void)
 {
     CHECK_EQ(ModLogic_MomDialogueStage(0, 0, 0, 0), MODLOGIC_MOM_STAGE_FRESH);
@@ -157,6 +183,7 @@ static void TestMomDialogueStage(void)
 int main(void)
 {
     TestMomDialogueStage();
+    TestMomServiceIsUseless();
     TestOverrideEncoding();
     TestStatNature();
     TestHiddenPower();

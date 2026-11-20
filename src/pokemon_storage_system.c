@@ -1,5 +1,6 @@
 #include "global.h"
 #include "malloc.h"
+#include "battle_main.h"
 #include "bg.h"
 #include "data.h"
 #include "decompress.h"
@@ -15,7 +16,11 @@
 #include "item.h"
 #include "item_icon.h"
 #include "item_menu.h"
+#include "list_menu.h"
 #include "mail.h"
+#include "mom_services.h"
+#include "mon_modifier_logic.h"
+#include "move_relearner.h"
 #include "main.h"
 #include "menu.h"
 #include "mon_markings.h"
@@ -36,7 +41,9 @@
 #include "trig.h"
 #include "walda_phrase.h"
 #include "window.h"
+#include "constants/flags.h"
 #include "constants/items.h"
+#include "constants/pkmn_center_mom.h"
 #include "constants/moves.h"
 #include "constants/rgb.h"
 #include "constants/songs.h"
@@ -58,6 +65,8 @@ enum {
     OPTION_EXIT,
     OPTIONS_COUNT
 };
+// Mom's services, opened from the Pokémon Center (MomOpenPC). Not on the PC menu.
+#define OPTION_MOM OPTIONS_COUNT
 
 // IDs for messages to print with PrintMessage
 enum {
@@ -147,6 +156,14 @@ enum {
     MENU_POKECENTER,
     MENU_MACHINE,
     MENU_SIMPLE,
+    MENU_MOM_SELECT,
+    MENU_MOM_HYPER_ALL, // MENU_MOM_HYPER_ALL + MOM_HYPER_* (order matches constants/pkmn_center_mom.h)
+    MENU_MOM_HYPER_HP,
+    MENU_MOM_HYPER_ATK,
+    MENU_MOM_HYPER_DEF,
+    MENU_MOM_HYPER_SPATK,
+    MENU_MOM_HYPER_SPDEF,
+    MENU_MOM_HYPER_SPEED,
 };
 #define MENU_WALLPAPER_SETS_START MENU_SCENERY_1
 #define MENU_WALLPAPERS_START MENU_FOREST
@@ -538,6 +555,12 @@ struct PokemonStorageSystemData
     } summaryMon;
     u8 messageText[40];
     u8 boxTitleText[40];
+    struct ListMenuItem momListItems[NUM_NATURES]; // Mom's Nature / Hidden Power list
+    u16 momListScroll;
+    u16 momListRow;
+    u8 momListTaskId;
+    u8 momListWindowId;
+    u8 momChoice;
     u8 releaseMonName[POKEMON_NAME_LENGTH + 1];
     u8 itemName[20];
     u8 inBoxMovingMode;
@@ -576,6 +599,17 @@ EWRAM_DATA static bool8 sIsMonBeingMoved = 0;
 EWRAM_DATA static u8 sMovingMonOrigBoxId = 0;
 EWRAM_DATA static u8 sMovingMonOrigBoxPos = 0;
 EWRAM_DATA static bool8 sAutoActionOn = 0;
+EWRAM_DATA static u8 sMomService = 0; // MODLOGIC_MOM_SERVICE_* while in OPTION_MOM
+// A boxed Pokémon given to the Move Relearner is copied here and written back afterwards (see
+// CB2_MomReturnFromRelearner). Party Pokémon are taught directly.
+EWRAM_DATA static struct Pokemon sMomRelearnMon = {0};
+EWRAM_DATA static struct {
+    bool8 inBox;
+    u8 boxId;
+    u8 boxPos;
+    u16 species;
+    u32 personality;
+} sMomRelearnTarget = {0};
 
 // Main tasks
 static void EnterPokeStorage(u8);
@@ -586,6 +620,12 @@ static void Task_ShowPokeStorage(u8);
 static void Task_OnBPressed(u8);
 static void Task_HandleBoxOptions(u8);
 static void Task_OnSelectedMon(u8);
+static void Task_MomService(u8);
+static void Task_MomExitPC(u8);
+static void Task_MomOpenPC(u8);
+static void CB2_ReturnToPokeStorage(void);
+static bool8 MomIsCursorMonBlocked(void);
+static bool8 MomShouldDimIcon(struct BoxPokemon *);
 static void Task_OnCloseBoxPressed(u8);
 static void Task_HidePartyPokemon(u8);
 static void Task_DepositMenu(u8);
@@ -1692,6 +1732,13 @@ static void CreateMainMenu(u8 whichMenu, s16 *windowIdPtr)
 
 static void CB2_ExitPokeStorage(void)
 {
+    if (GetCurrentBoxOption() == OPTION_MOM)
+    {
+        // Opened by Mom's script: go back to the field and let the script continue.
+        gFieldCallback = FieldCB_ContinueScriptHandleMusic;
+        SetMainCallback2(CB2_ReturnToField);
+        return;
+    }
     sPreviousBoxOption = GetCurrentBoxOption();
     if (sOpenedFromStartMenu)
     {
@@ -2095,7 +2142,7 @@ static void InitStartingPosData(void)
 
 static void SetMonIconTransparency(void)
 {
-    if (sStorage->boxOption == OPTION_MOVE_ITEMS)
+    if (sStorage->boxOption == OPTION_MOVE_ITEMS || sStorage->boxOption == OPTION_MOM)
     {
         SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT2_ALL);
         SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(7, 11));
@@ -2203,7 +2250,7 @@ static void Task_InitPokeStorage(u8 taskId)
         break;
     case 10:
         SetMonIconTransparency();
-        if (!sStorage->isReopening)
+        if (!sStorage->isReopening && sStorage->boxOption != OPTION_MOM)
         {
             BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
             SetPokeStorageTask(Task_ShowPokeStorage);
@@ -2302,7 +2349,7 @@ static void Task_PokeStorageMain(u8 taskId)
             sStorage->state = MSTATE_MOVE_CURSOR;
             break;
         case INPUT_SHOW_PARTY:
-            if (sStorage->boxOption != OPTION_MOVE_MONS && sStorage->boxOption != OPTION_MOVE_ITEMS)
+            if (sStorage->boxOption != OPTION_MOVE_MONS && sStorage->boxOption != OPTION_MOVE_ITEMS && sStorage->boxOption != OPTION_MOM)
             {
                 PrintMessage(MSG_WHICH_ONE_WILL_TAKE);
                 sStorage->state = MSTATE_WAIT_MSG;
@@ -2321,16 +2368,22 @@ static void Task_PokeStorageMain(u8 taskId)
                 else
                     SetPokeStorageTask(Task_HidePartyPokemon);
             }
-            else if (sStorage->boxOption == OPTION_MOVE_ITEMS)
+            else if (sStorage->boxOption == OPTION_MOVE_ITEMS || sStorage->boxOption == OPTION_MOM)
             {
                 SetPokeStorageTask(Task_HidePartyPokemon);
             }
             break;
         case INPUT_CLOSE_BOX:
-            SetPokeStorageTask(Task_OnCloseBoxPressed);
+            if (sStorage->boxOption == OPTION_MOM)
+                SetPokeStorageTask(Task_MomExitPC);
+            else
+                SetPokeStorageTask(Task_OnCloseBoxPressed);
             break;
         case INPUT_PRESSED_B:
-            SetPokeStorageTask(Task_OnBPressed);
+            if (sStorage->boxOption == OPTION_MOM)
+                SetPokeStorageTask(Task_MomExitPC);
+            else
+                SetPokeStorageTask(Task_OnBPressed);
             break;
         case INPUT_BOX_OPTIONS:
             PlaySE(SE_SELECT);
@@ -2730,6 +2783,12 @@ static void Task_OnSelectedMon(u8 taskId)
         case MENU_INFO:
             SetPokeStorageTask(Task_ShowItemInfo);
             break;
+        case MENU_MOM_SELECT:
+            PlaySE(SE_SELECT);
+            sStorage->momListScroll = 0;
+            sStorage->momListRow = 0;
+            SetPokeStorageTask(Task_MomService);
+            break;
         }
         break;
     case 3:
@@ -2752,6 +2811,441 @@ static void Task_OnSelectedMon(u8 taskId)
         {
             ClearBottomWindow();
             SetPokeStorageTask(Task_PokeStorageMain);
+        }
+        break;
+    }
+}
+
+//------------------------------------------------------------------------------
+//  SECTION: Mom's services
+//
+//  Mom (in every Pokémon Center) opens the PC in OPTION_MOM for one service. The
+//  player picks a party or boxed Pokémon (SELECT / SUMMARY / CANCEL) and the
+//  service runs right here: a Yes/No box, the Hyper Training stat menu or a
+//  scrolling Nature / Hidden Power list. Pokémon the service can't improve are
+//  dimmed and refuse with the buzzer. Relearn Moves leaves for the relearner
+//  screen and comes back. B (or Close Box) goes back to Mom.
+//------------------------------------------------------------------------------
+
+static const u8 sText_MomTrainWhich[] = _("Train which one, dear?");
+static const u8 sText_MomHyperConfirm[] = _("Max out {STR_VAR_1}?");
+static const u8 sText_MomAlreadyMaxed[] = _("That one's already maxed!");
+static const u8 sText_MomEVConfirm[] = _("Max out all its EVs?");
+static const u8 sText_MomAbilityConfirm[] = _("Switch to {STR_VAR_1}?");
+static const u8 sText_MomNatureNow[] = _("Its nature now: {STR_VAR_1}");
+static const u8 sText_MomNatureConfirm[] = _("Change it to {STR_VAR_1}?");
+static const u8 sText_MomTypeNow[] = _("HIDDEN POWER: {STR_VAR_1}");
+static const u8 sText_MomTypeConfirm[] = _("Make it {STR_VAR_1}-type?");
+static const u8 sText_MomAlreadyThat[] = _("It's already {STR_VAR_1}!");
+static const u8 sText_MomDone[] = _("All done, dear!");
+static const u8 sText_MomNoMoves[] = _("No moves to remind it of!");
+
+// Opens the PC for Mom's service VAR_0x8004 (MODLOGIC_MOM_SERVICE_*). Use with waitstate.
+void MomOpenPC(void)
+{
+    sMomService = gSpecialVar_0x8004 < MODLOGIC_MOM_NUM_SERVICES ? gSpecialVar_0x8004 : MODLOGIC_MOM_SERVICE_HYPER_TRAINING;
+    LockPlayerFieldControls();
+    FadeScreen(FADE_TO_BLACK, 0);
+    CreateTask(Task_MomOpenPC, 10);
+}
+
+static void Task_MomOpenPC(u8 taskId)
+{
+    if (!gPaletteFade.active)
+    {
+        CleanupOverworldWindowsAndTilemaps();
+        DestroyTask(taskId);
+        sOpenedFromStartMenu = FALSE;
+        sWhichToReshow = 0xFF; // nothing to restore; fade in without the PC login effect
+        EnterPokeStorage(OPTION_MOM);
+    }
+}
+
+static struct BoxPokemon *GetCursorBoxMon(void)
+{
+    if (sCursorArea == CURSOR_AREA_IN_PARTY && sCursorPosition < PARTY_SIZE)
+        return &gPlayerParty[sCursorPosition].box;
+    if (sCursorArea == CURSOR_AREA_IN_BOX)
+        return GetBoxedMonPtr(StorageGetCurrentBox(), sCursorPosition);
+    return NULL;
+}
+
+static bool8 MomShouldDimIcon(struct BoxPokemon *boxMon)
+{
+    return sStorage->boxOption == OPTION_MOM && Mom_IsServiceUseless(sMomService, boxMon);
+}
+
+// TRUE if A on the cursor's Pokémon should just buzz (Mom's mode, and the service can't help it).
+static bool8 MomIsCursorMonBlocked(void)
+{
+    struct BoxPokemon *boxMon;
+
+    if (sStorage->boxOption != OPTION_MOM)
+        return FALSE;
+    boxMon = GetCursorBoxMon();
+    if (boxMon == NULL || GetBoxMonData(boxMon, MON_DATA_SPECIES) == SPECIES_NONE)
+        return FALSE;
+    return Mom_IsServiceUseless(sMomService, boxMon);
+}
+
+// After a service, the cursor's Pokémon may have become (un)improvable: update its icon.
+static void MomRefreshCursorIcon(void)
+{
+    struct Sprite *sprite = NULL;
+    struct BoxPokemon *boxMon = GetCursorBoxMon();
+
+    if (sCursorArea == CURSOR_AREA_IN_PARTY && sCursorPosition < PARTY_SIZE)
+        sprite = sStorage->partySprites[sCursorPosition];
+    else if (sCursorArea == CURSOR_AREA_IN_BOX)
+        sprite = sStorage->boxMonsSprites[sCursorPosition];
+    if (sprite != NULL && boxMon != NULL)
+        sprite->oam.objMode = MomShouldDimIcon(boxMon) ? ST_OAM_OBJ_BLEND : ST_OAM_OBJ_NORMAL;
+}
+
+// One-line message in the PC's message box. Placeholders like {STR_VAR_1} are expanded.
+static void PrintMomMessage(const u8 *text)
+{
+    StringExpandPlaceholders(gStringVar4, text);
+    FillWindowPixelBuffer(WIN_MESSAGE, PIXEL_FILL(1));
+    AddTextPrinterParameterized(WIN_MESSAGE, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);
+    DrawTextBorderOuter(WIN_MESSAGE, 2, 14);
+    PutWindowTilemap(WIN_MESSAGE);
+    CopyWindowToVram(WIN_MESSAGE, COPYWIN_GFX);
+    ScheduleBgCopyTilemapToVram(0);
+}
+
+#define MOM_LIST_ROWS 6
+
+// Scrolling list (Nature or Hidden Power type) on the right side of the PC, above the message box.
+static void OpenMomList(u8 count)
+{
+    struct WindowTemplate template;
+    struct ListMenuTemplate list;
+    u32 width = 0;
+    u8 i;
+
+    for (i = 0; i < count; i++)
+    {
+        u32 w = GetStringWidth(FONT_NORMAL, sStorage->momListItems[i].name, 0);
+        if (w > width)
+            width = w;
+    }
+    width = (width + 8 + 7) / 8; // room for the cursor
+    if (width > 18)
+        width = 18;
+
+    template.bg = 0;
+    template.tilemapLeft = 29 - width;
+    template.tilemapTop = 2;
+    template.width = width;
+    template.height = MOM_LIST_ROWS * 2;
+    template.paletteNum = 15;
+    template.baseBlock = 92;
+    sStorage->momListWindowId = AddWindow(&template);
+    DrawStdFrameWithCustomTileAndPalette(sStorage->momListWindowId, FALSE, 11, 14);
+
+    list.items = sStorage->momListItems;
+    list.moveCursorFunc = ListMenuDefaultCursorMoveFunc;
+    list.itemPrintFunc = NULL;
+    list.totalItems = count;
+    list.maxShowed = MOM_LIST_ROWS;
+    list.windowId = sStorage->momListWindowId;
+    list.header_X = 0;
+    list.item_X = 8;
+    list.cursor_X = 0;
+    list.upText_Y = 1;
+    list.cursorPal = 2;
+    list.fillValue = 1;
+    list.cursorShadowPal = 3;
+    list.lettersSpacing = 0;
+    list.itemVerticalPadding = 0;
+    list.scrollMultiple = LIST_NO_MULTIPLE_SCROLL;
+    list.fontId = FONT_NORMAL;
+    list.cursorKind = CURSOR_BLACK_ARROW;
+    sStorage->momListTaskId = ListMenuInit(&list, sStorage->momListScroll, sStorage->momListRow);
+    ScheduleBgCopyTilemapToVram(0);
+}
+
+static void CloseMomList(void)
+{
+    DestroyListMenuTask(sStorage->momListTaskId, &sStorage->momListScroll, &sStorage->momListRow);
+    ClearStdWindowAndFrameToTransparent(sStorage->momListWindowId, TRUE);
+    RemoveWindow(sStorage->momListWindowId);
+    ScheduleBgCopyTilemapToVram(0);
+}
+
+// After the relearner closes: write a boxed Pokémon's copy back (only if the same Pokémon is still in that
+// slot), then reopen the PC where the player left it.
+static void CB2_MomReturnFromRelearner(void)
+{
+    if (sMomRelearnTarget.inBox)
+    {
+        struct BoxPokemon *dest = GetBoxedMonPtr(sMomRelearnTarget.boxId, sMomRelearnTarget.boxPos);
+
+        if (dest != NULL
+         && GetBoxMonData(dest, MON_DATA_SPECIES) == sMomRelearnTarget.species
+         && GetBoxMonData(dest, MON_DATA_PERSONALITY) == sMomRelearnTarget.personality
+         && GetMonData(&sMomRelearnMon, MON_DATA_SPECIES) == sMomRelearnTarget.species
+         && GetMonData(&sMomRelearnMon, MON_DATA_PERSONALITY) == sMomRelearnTarget.personality)
+            *dest = sMomRelearnMon.box;
+        sMomRelearnTarget.inBox = FALSE;
+    }
+    gRelearnerIncludesEggMoves = FALSE;
+    sWhichToReshow = 0xFF;
+    CB2_ReturnToPokeStorage();
+}
+
+enum {
+    MOMSTATE_START,
+    MOMSTATE_HYPER_MENU,
+    MOMSTATE_LIST,
+    MOMSTATE_CONFIRM,
+    MOMSTATE_WAIT_DONE,
+    MOMSTATE_WAIT_MSG_RESTART, // message, then back to the service's first step
+    MOMSTATE_WAIT_MSG_EXIT,    // message, then back to choosing a Pokémon
+    MOMSTATE_RELEARN_FADE,
+};
+
+static void MomBackToChoosing(void)
+{
+    ClearBottomWindow();
+    SetPokeStorageTask(Task_PokeStorageMain);
+}
+
+static void MomRefuse(const u8 *text, u8 nextState)
+{
+    PlaySE(SE_FAILURE);
+    PrintMomMessage(text);
+    sStorage->state = nextState;
+}
+
+static void MomAskYesNo(const u8 *text)
+{
+    PrintMomMessage(text);
+    ShowYesNoWindow(0);
+    sStorage->state = MOMSTATE_CONFIRM;
+}
+
+static void MomApplyService(struct BoxPokemon *boxMon)
+{
+    switch (sMomService)
+    {
+    case MODLOGIC_MOM_SERVICE_HYPER_TRAINING:
+        Mom_ApplyHyperTraining(boxMon, sStorage->momChoice);
+        break;
+    case MODLOGIC_MOM_SERVICE_NATURE:
+        Mom_ApplyNature(boxMon, sStorage->momChoice);
+        break;
+    case MODLOGIC_MOM_SERVICE_ABILITY:
+        Mom_ApplyAbilitySwap(boxMon);
+        break;
+    case MODLOGIC_MOM_SERVICE_HIDDEN_POWER:
+        Mom_ApplyHiddenPower(boxMon, Mom_GetHiddenPowerListType(sStorage->momChoice));
+        break;
+    case MODLOGIC_MOM_SERVICE_MAX_EVS:
+        Mom_ApplyMaxEVs(boxMon);
+        break;
+    }
+}
+
+static void Task_MomService(u8 taskId)
+{
+    struct BoxPokemon *boxMon = GetCursorBoxMon();
+    s32 input;
+    u8 i;
+
+    if (boxMon == NULL)
+    {
+        MomBackToChoosing();
+        return;
+    }
+
+    switch (sStorage->state)
+    {
+    case MOMSTATE_START:
+        switch (sMomService)
+        {
+        case MODLOGIC_MOM_SERVICE_HYPER_TRAINING:
+            PrintMomMessage(sText_MomTrainWhich);
+            InitMenu();
+            for (i = MOM_HYPER_ALL; i <= MOM_HYPER_SPEED; i++)
+                SetMenuText(MENU_MOM_HYPER_ALL + i);
+            AddMenu();
+            sStorage->state = MOMSTATE_HYPER_MENU;
+            break;
+        case MODLOGIC_MOM_SERVICE_NATURE:
+            StringCopy(gStringVar1, gNatureNamePointers[Mom_GetStatNature(boxMon)]);
+            PrintMomMessage(sText_MomNatureNow);
+            for (i = 0; i < NUM_NATURES; i++)
+            {
+                sStorage->momListItems[i].name = Mom_GetNatureOptionText(i);
+                sStorage->momListItems[i].id = i;
+            }
+            OpenMomList(NUM_NATURES);
+            sStorage->state = MOMSTATE_LIST;
+            break;
+        case MODLOGIC_MOM_SERVICE_HIDDEN_POWER:
+            StringCopy(gStringVar1, gTypeNames[Mom_GetHiddenPowerType(boxMon)]);
+            PrintMomMessage(sText_MomTypeNow);
+            for (i = 0; i < MOM_NUM_HIDDEN_POWER_TYPES; i++)
+            {
+                sStorage->momListItems[i].name = gTypeNames[Mom_GetHiddenPowerListType(i)];
+                sStorage->momListItems[i].id = i;
+            }
+            OpenMomList(MOM_NUM_HIDDEN_POWER_TYPES);
+            sStorage->state = MOMSTATE_LIST;
+            break;
+        case MODLOGIC_MOM_SERVICE_ABILITY:
+            StringCopy(gStringVar1, gAbilityNames[Mom_GetOtherAbility(boxMon)]);
+            MomAskYesNo(sText_MomAbilityConfirm);
+            break;
+        case MODLOGIC_MOM_SERVICE_MAX_EVS:
+            MomAskYesNo(sText_MomEVConfirm);
+            break;
+        case MODLOGIC_MOM_SERVICE_RELEARN_MOVES:
+        default:
+            if (Mom_CountMovesToRelearn(boxMon) == 0)
+            {
+                MomRefuse(sText_MomNoMoves, MOMSTATE_WAIT_MSG_EXIT);
+            }
+            else
+            {
+                BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+                sStorage->state = MOMSTATE_RELEARN_FADE;
+            }
+            break;
+        }
+        break;
+    case MOMSTATE_HYPER_MENU:
+        input = HandleMenuInput();
+        if (input == MENU_NOTHING_CHOSEN)
+            break;
+        if (input < MENU_MOM_HYPER_ALL)
+        {
+            MomBackToChoosing(); // B
+            break;
+        }
+        sStorage->momChoice = input - MENU_MOM_HYPER_ALL;
+        if (!Mom_CanHyperTrain(boxMon, sStorage->momChoice))
+        {
+            MomRefuse(sText_MomAlreadyMaxed, MOMSTATE_WAIT_MSG_RESTART);
+        }
+        else
+        {
+            StringCopy(gStringVar1, Mom_GetHyperTrainingLabel(sStorage->momChoice));
+            MomAskYesNo(sText_MomHyperConfirm);
+        }
+        break;
+    case MOMSTATE_LIST:
+        input = ListMenu_ProcessInput(sStorage->momListTaskId);
+        if (input == LIST_NOTHING_CHOSEN)
+            break;
+        CloseMomList();
+        if (input == LIST_CANCEL)
+        {
+            PlaySE(SE_SELECT);
+            MomBackToChoosing();
+            break;
+        }
+        PlaySE(SE_SELECT);
+        sStorage->momChoice = input;
+        if (sMomService == MODLOGIC_MOM_SERVICE_NATURE)
+        {
+            StringCopy(gStringVar1, gNatureNamePointers[input]);
+            if (input == Mom_GetStatNature(boxMon))
+                MomRefuse(sText_MomAlreadyThat, MOMSTATE_WAIT_MSG_RESTART);
+            else
+                MomAskYesNo(sText_MomNatureConfirm);
+        }
+        else
+        {
+            u8 type = Mom_GetHiddenPowerListType(input);
+
+            StringCopy(gStringVar1, gTypeNames[type]);
+            if (type == Mom_GetHiddenPowerType(boxMon))
+                MomRefuse(sText_MomAlreadyThat, MOMSTATE_WAIT_MSG_RESTART);
+            else
+                MomAskYesNo(sText_MomTypeConfirm);
+        }
+        break;
+    case MOMSTATE_CONFIRM:
+        switch (Menu_ProcessInputNoWrapClearOnChoose())
+        {
+        case 0: // Yes
+            MomApplyService(boxMon);
+            MomRefreshCursorIcon();
+            PlayFanfare(MUS_LEVEL_UP);
+            PrintMomMessage(sText_MomDone);
+            sStorage->state = MOMSTATE_WAIT_DONE;
+            break;
+        case 1: // No
+        case MENU_B_PRESSED:
+            if (sMomService == MODLOGIC_MOM_SERVICE_ABILITY || sMomService == MODLOGIC_MOM_SERVICE_MAX_EVS)
+                MomBackToChoosing();
+            else
+                sStorage->state = MOMSTATE_START; // back to the stat menu / list
+            break;
+        }
+        break;
+    case MOMSTATE_WAIT_DONE:
+        if (IsFanfareTaskInactive() && JOY_NEW(A_BUTTON | B_BUTTON))
+            MomBackToChoosing();
+        break;
+    case MOMSTATE_WAIT_MSG_RESTART:
+        if (JOY_NEW(A_BUTTON | B_BUTTON))
+            sStorage->state = MOMSTATE_START;
+        break;
+    case MOMSTATE_WAIT_MSG_EXIT:
+        if (JOY_NEW(A_BUTTON | B_BUTTON))
+            MomBackToChoosing();
+        break;
+    case MOMSTATE_RELEARN_FADE:
+        if (!UpdatePaletteFade())
+        {
+            struct Pokemon *target;
+
+            if (sCursorArea == CURSOR_AREA_IN_PARTY)
+            {
+                target = &gPlayerParty[sCursorPosition];
+                sMomRelearnTarget.inBox = FALSE;
+            }
+            else
+            {
+                BoxMonToMon(boxMon, &sMomRelearnMon);
+                sMomRelearnTarget.inBox = TRUE;
+                sMomRelearnTarget.boxId = StorageGetCurrentBox();
+                sMomRelearnTarget.boxPos = sCursorPosition;
+                sMomRelearnTarget.species = GetBoxMonData(boxMon, MON_DATA_SPECIES);
+                sMomRelearnTarget.personality = GetBoxMonData(boxMon, MON_DATA_PERSONALITY);
+                target = &sMomRelearnMon;
+            }
+            FlagClear(FLAG_EGG_MOVES_TUTOR);
+            gRelearnerIncludesEggMoves = TRUE;
+            FreePokeStorageData();
+            ShowMoveRelearnerForMon(target, CB2_MomReturnFromRelearner);
+            DestroyTask(taskId);
+        }
+        break;
+    }
+}
+
+// B or Close Box in Mom's mode: straight back to Mom, no "Exit the PC?" question.
+static void Task_MomExitPC(u8 taskId)
+{
+    switch (sStorage->state)
+    {
+    case 0:
+        PlaySE(SE_SELECT);
+        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+        sStorage->state++;
+        break;
+    case 1:
+        if (!UpdatePaletteFade())
+        {
+            UpdateBoxToSendMons();
+            gPlayerPartyCount = CalculatePlayerPartyCount();
+            sStorage->screenChangeType = SCREEN_CHANGE_EXIT_BOX;
+            SetPokeStorageTask(Task_ChangeScreen);
         }
         break;
     }
@@ -4496,6 +4990,15 @@ static void InitBoxMonSprites(u8 boxId)
                 sStorage->boxMonsSprites[boxPosition]->oam.objMode = ST_OAM_OBJ_BLEND;
         }
     }
+    // In Mom's mode, dim the Pokémon the current service can't improve
+    else if (sStorage->boxOption == OPTION_MOM)
+    {
+        for (boxPosition = 0; boxPosition < IN_BOX_COUNT; boxPosition++)
+        {
+            if (sStorage->boxMonsSprites[boxPosition] != NULL && MomShouldDimIcon(GetBoxedMonPtr(boxId, boxPosition)))
+                sStorage->boxMonsSprites[boxPosition]->oam.objMode = ST_OAM_OBJ_BLEND;
+        }
+    }
 }
 
 static void CreateBoxMonIconAtPos(u8 boxPosition)
@@ -4510,6 +5013,8 @@ static void CreateBoxMonIconAtPos(u8 boxPosition)
 
         sStorage->boxMonsSprites[boxPosition] = CreateMonIconSprite(species, personality, x, y, 2, 19 - (boxPosition % IN_BOX_COLUMNS));
         if (sStorage->boxOption == OPTION_MOVE_ITEMS)
+            sStorage->boxMonsSprites[boxPosition]->oam.objMode = ST_OAM_OBJ_BLEND;
+        else if (sStorage->boxMonsSprites[boxPosition] != NULL && MomShouldDimIcon(GetBoxedMonPtr(StorageGetCurrentBox(), boxPosition)))
             sStorage->boxMonsSprites[boxPosition]->oam.objMode = ST_OAM_OBJ_BLEND;
     }
 }
@@ -4614,6 +5119,8 @@ static u8 CreateBoxMonIconsInColumn(u8 column, u16 distance, s16 speed)
                     sStorage->boxMonsSprites[boxPosition]->sSpeed = speed;
                     sStorage->boxMonsSprites[boxPosition]->sScrollInDestX = xDest;
                     sStorage->boxMonsSprites[boxPosition]->callback = SpriteCB_BoxMonIconScrollIn;
+                    if (MomShouldDimIcon(GetBoxedMonPtr(sStorage->incomingBoxId, boxPosition)))
+                        sStorage->boxMonsSprites[boxPosition]->oam.objMode = ST_OAM_OBJ_BLEND;
                     iconsCreated++;
                 }
             }
@@ -4796,6 +5303,14 @@ static void CreatePartyMonsSprites(bool8 visible)
         for (i = 0; i < PARTY_SIZE; i++)
         {
             if (sStorage->partySprites[i] != NULL && GetMonData(&gPlayerParty[i], MON_DATA_HELD_ITEM) == ITEM_NONE)
+                sStorage->partySprites[i]->oam.objMode = ST_OAM_OBJ_BLEND;
+        }
+    }
+    else if (sStorage->boxOption == OPTION_MOM)
+    {
+        for (i = 0; i < PARTY_SIZE; i++)
+        {
+            if (sStorage->partySprites[i] != NULL && MomShouldDimIcon(&gPlayerParty[i].box))
                 sStorage->partySprites[i]->oam.objMode = ST_OAM_OBJ_BLEND;
         }
     }
@@ -7112,6 +7627,9 @@ static u8 InBoxInput_Normal(void)
             break;
         }
 
+        if (JOY_NEW(A_BUTTON) && MomIsCursorMonBlocked())
+            return INPUT_MULTIMOVE_UNABLE; // plays the buzzer
+
         if ((JOY_NEW(A_BUTTON)) && SetSelectionMenuTexts())
         {
             if (!sAutoActionOn)
@@ -7395,6 +7913,10 @@ static u8 HandleInput_InParty(void)
 
                 gotoBox = TRUE;
             }
+            else if (MomIsCursorMonBlocked())
+            {
+                return INPUT_MULTIMOVE_UNABLE; // plays the buzzer
+            }
             else if (SetSelectionMenuTexts())
             {
                 if (!sAutoActionOn)
@@ -7675,6 +8197,13 @@ static bool8 SetMenuTexts_Mon(void)
                 return FALSE;
         }
         break;
+    case OPTION_MOM:
+        if (species == SPECIES_NONE)
+            return FALSE;
+        SetMenuText(MENU_MOM_SELECT);
+        SetMenuText(MENU_SUMMARY);
+        SetMenuText(MENU_CANCEL);
+        return TRUE;
     case OPTION_MOVE_ITEMS:
     default:
         return FALSE;
@@ -7885,6 +8414,8 @@ static void CreateCursorSprites(void)
 
 static void ToggleCursorAutoAction(void)
 {
+    if (sStorage->boxOption == OPTION_MOM)
+        return; // no quick-move shortcuts while choosing for Mom
     sAutoActionOn = !sAutoActionOn;
     sStorage->cursorSprite->oam.paletteNum = sStorage->cursorPalNums[sAutoActionOn];
 }
@@ -7953,6 +8484,15 @@ static void InitMenu(void)
     sStorage->menuWindow.baseBlock = 92;
 }
 
+static const u8 sText_MomSelect[] = _("SELECT");
+static const u8 sText_MomAllStats[] = _("ALL STATS");
+static const u8 sText_MomHp[] = _("HP");
+static const u8 sText_MomAttack[] = _("ATTACK");
+static const u8 sText_MomDefense[] = _("DEFENSE");
+static const u8 sText_MomSpAtk[] = _("SP. ATK");
+static const u8 sText_MomSpDef[] = _("SP. DEF");
+static const u8 sText_MomSpeed[] = _("SPEED");
+
 static const u8 *const sMenuTexts[] =
 {
     [MENU_CANCEL]     = gPCText_Cancel,
@@ -7994,6 +8534,14 @@ static const u8 *const sMenuTexts[] =
     [MENU_POKECENTER] = gPCText_Pokecenter,
     [MENU_MACHINE]    = gPCText_Machine,
     [MENU_SIMPLE]     = gPCText_Simple,
+    [MENU_MOM_SELECT]      = sText_MomSelect,
+    [MENU_MOM_HYPER_ALL]   = sText_MomAllStats,
+    [MENU_MOM_HYPER_HP]    = sText_MomHp,
+    [MENU_MOM_HYPER_ATK]   = sText_MomAttack,
+    [MENU_MOM_HYPER_DEF]   = sText_MomDefense,
+    [MENU_MOM_HYPER_SPATK] = sText_MomSpAtk,
+    [MENU_MOM_HYPER_SPDEF] = sText_MomSpDef,
+    [MENU_MOM_HYPER_SPEED] = sText_MomSpeed,
 };
 
 static void SetMenuText(u8 textId)

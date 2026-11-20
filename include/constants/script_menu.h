@@ -123,7 +123,6 @@
 #define MULTI_FALLARBOR_TENT_RULES         112
 #define MULTI_TAG_MATCH_TYPE               113
 #define MULTI_FOSSIL_POST_GAME             114
-#define MULTI_MOM_HYPER_TRAINING           116
 
 // Lilycove SS Tidal Multichoice Selections
 #define SSTIDAL_SELECTION_SLATEPORT        0

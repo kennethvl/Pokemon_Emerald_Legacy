@@ -1,10 +1,11 @@
 #ifndef GUARD_CONSTANTS_PKMN_CENTER_MOM_H
 #define GUARD_CONSTANTS_PKMN_CENTER_MOM_H
 
-// Price of each of Mom's services (Hyper Training is charged per stat trained).
-#define MOM_SERVICE_PRICE 10
+// Number of services in Mom's menu (the menu index is the service, see MODLOGIC_MOM_SERVICE_* in
+// mon_modifier_logic.h). Items after them (CANCEL) close the menu.
+#define MOM_NUM_SERVICES 6
 
-// Hyper Training menu selections (order matches MultichoiceList_MomHyperTraining)
+// Hyper Training selections (order matches MENU_MOM_HYPER_* in pokemon_storage_system.c)
 #define MOM_HYPER_ALL     0
 #define MOM_HYPER_HP      1
 #define MOM_HYPER_ATK     2
@@ -12,6 +13,5 @@
 #define MOM_HYPER_SPATK   4
 #define MOM_HYPER_SPDEF   5
 #define MOM_HYPER_SPEED   6
-#define MOM_HYPER_CANCEL  7
 
 #endif // GUARD_CONSTANTS_PKMN_CENTER_MOM_H

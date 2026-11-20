@@ -3,5 +3,6 @@
 
 void TeachMoveRelearnerMove(void);
 void MoveRelearnerShowHideHearts(s32);
+void ShowMoveRelearnerForMon(struct Pokemon *mon, void (*exitCallback)(void));
 
 #endif //GUARD_MOVE_RELEARNER_H

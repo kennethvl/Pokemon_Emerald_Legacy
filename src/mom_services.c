@@ -2,7 +2,6 @@
 #include "event_data.h"
 #include "field_message_box.h"
 #include "random.h"
-#include "money.h"
 #include "mom_services.h"
 #include "mon_modifier_logic.h"
 #include "pokemon.h"
@@ -11,16 +10,75 @@
 #include "battle_main.h"
 #include "pokemon_summary_screen.h"
 #include "constants/abilities.h"
-#include "constants/field_specials.h"
 #include "constants/flags.h"
 #include "constants/vars.h"
 #include "constants/pkmn_center_mom.h"
 #include "constants/pokemon.h"
 
-// Party Pokémon the service is applied to: VAR_0x8004 (set by the ChoosePartyMon special).
-#define SERVICE_MON (&gPlayerParty[gSpecialVar_0x8004])
+// Mom's services work on a struct BoxPokemon, so the same code handles party Pokémon (&gPlayerParty[i].box)
+// and Pokémon in the PC boxes. The PC (pokemon_storage_system.c) runs the menus and messages.
 
-static const u8 sText_AllIVs[] = _("IVs");
+// If boxMon is a party Pokémon, recalculate its stats (boxed Pokémon don't store stats).
+static void RecalcStatsIfParty(struct BoxPokemon *boxMon)
+{
+    u8 i;
+
+    for (i = 0; i < PARTY_SIZE; i++)
+    {
+        if (&gPlayerParty[i].box == boxMon)
+        {
+            CalculateMonStats(&gPlayerParty[i]);
+            return;
+        }
+    }
+}
+
+static const u8 sIVMonData[NUM_STATS] =
+{
+    MON_DATA_HP_IV, MON_DATA_ATK_IV, MON_DATA_DEF_IV, MON_DATA_SPEED_IV, MON_DATA_SPATK_IV, MON_DATA_SPDEF_IV,
+};
+
+static const u8 sEVMonData[NUM_STATS] =
+{
+    MON_DATA_HP_EV, MON_DATA_ATK_EV, MON_DATA_DEF_EV, MON_DATA_SPEED_EV, MON_DATA_SPATK_EV, MON_DATA_SPDEF_EV,
+};
+
+static void GetBoxMonIVs(struct BoxPokemon *boxMon, u8 *ivs)
+{
+    u8 i;
+
+    for (i = 0; i < NUM_STATS; i++)
+        ivs[i] = GetBoxMonData(boxMon, sIVMonData[i]);
+}
+
+static void GetBoxMonEVs(struct BoxPokemon *boxMon, u8 *evs)
+{
+    u8 i;
+
+    for (i = 0; i < NUM_STATS; i++)
+        evs[i] = GetBoxMonData(boxMon, sEVMonData[i]);
+}
+
+// Called for every icon the PC shows, so it only reads the data the service needs.
+bool8 Mom_IsServiceUseless(u8 service, struct BoxPokemon *boxMon)
+{
+    u8 ivs[NUM_STATS] = {0}, evs[NUM_STATS] = {0};
+    u16 species = GetBoxMonData(boxMon, MON_DATA_SPECIES);
+
+    if (species == SPECIES_NONE)
+        return TRUE;
+    if (service == MODLOGIC_MOM_SERVICE_HYPER_TRAINING)
+        GetBoxMonIVs(boxMon, ivs);
+    else if (service == MODLOGIC_MOM_SERVICE_MAX_EVS)
+        GetBoxMonEVs(boxMon, evs);
+    return ModLogic_MomServiceIsUseless(service, GetBoxMonData(boxMon, MON_DATA_IS_EGG),
+                                        ivs, MAX_PER_STAT_IVS, evs, MAX_PER_STAT_EVS,
+                                        gSpeciesInfo[species].abilities[0], gSpeciesInfo[species].abilities[1]);
+}
+
+// ---- Hyper Training: raise IVs to 31 ----
+
+static const u8 sText_AllIVs[] = _("all its IVs");
 static const u8 sText_HpIV[] = _("HP IV");
 static const u8 sText_AttackIV[] = _("ATTACK IV");
 static const u8 sText_DefenseIV[] = _("DEFENSE IV");
@@ -39,7 +97,7 @@ static const u8 *const sHyperTrainingLabels[] =
     [MOM_HYPER_SPEED] = sText_SpeedIV,
 };
 
-// MON_DATA_*_IV for each Hyper Training selection (index 0, "all", is unused).
+// MON_DATA_*_IV for each single-stat selection (index MOM_HYPER_ALL is unused).
 static const u8 sHyperTrainingMonData[] =
 {
     [MOM_HYPER_HP]    = MON_DATA_HP_IV,
@@ -50,111 +108,82 @@ static const u8 sHyperTrainingMonData[] =
     [MOM_HYPER_SPEED] = MON_DATA_SPEED_IV,
 };
 
-// VAR_RESULT = TRUE if the chosen Pokémon can be modified (not an Egg). Buffers its nickname in STR_VAR_1.
-void MomCanModifyPartyMon(void)
+const u8 *Mom_GetHyperTrainingLabel(u8 selection)
 {
-    struct Pokemon *mon = SERVICE_MON;
-
-    GetMonData(mon, MON_DATA_NICKNAME, gStringVar1);
-    StringGet_Nickname(gStringVar1);
-    gSpecialVar_Result = !GetMonData(mon, MON_DATA_IS_EGG) && GetMonData(mon, MON_DATA_SPECIES) != SPECIES_NONE;
+    return sHyperTrainingLabels[selection];
 }
 
-static void GetMonIVs(struct Pokemon *mon, u8 *ivs)
-{
-    ivs[STAT_HP] = GetMonData(mon, MON_DATA_HP_IV);
-    ivs[STAT_ATK] = GetMonData(mon, MON_DATA_ATK_IV);
-    ivs[STAT_DEF] = GetMonData(mon, MON_DATA_DEF_IV);
-    ivs[STAT_SPEED] = GetMonData(mon, MON_DATA_SPEED_IV);
-    ivs[STAT_SPATK] = GetMonData(mon, MON_DATA_SPATK_IV);
-    ivs[STAT_SPDEF] = GetMonData(mon, MON_DATA_SPDEF_IV);
-}
-
-// How many IVs a Hyper Training selection (VAR_0x8005) would raise.
-static u8 CountIVsToTrain(struct Pokemon *mon, u8 selection)
+// TRUE if the selection (MOM_HYPER_*) would raise at least one IV.
+bool8 Mom_CanHyperTrain(struct BoxPokemon *boxMon, u8 selection)
 {
     if (selection == MOM_HYPER_ALL)
     {
         u8 ivs[NUM_STATS];
 
-        GetMonIVs(mon, ivs);
-        return ModLogic_CountIVsBelowMax(ivs, MAX_PER_STAT_IVS);
+        GetBoxMonIVs(boxMon, ivs);
+        return ModLogic_CountIVsBelowMax(ivs, MAX_PER_STAT_IVS) != 0;
     }
-    return GetMonData(mon, sHyperTrainingMonData[selection]) < MAX_PER_STAT_IVS;
+    return GetBoxMonData(boxMon, sHyperTrainingMonData[selection]) < MAX_PER_STAT_IVS;
 }
 
-// Inputs: VAR_0x8004 = party slot, VAR_0x8005 = selection.
-// Outputs: VAR_RESULT = VAR_0x8006 = total price (0 if there is nothing to train),
-//          STR_VAR_1 = nickname, STR_VAR_2 = price, STR_VAR_3 = what is being trained.
-void MomBufferHyperTraining(void)
+void Mom_ApplyHyperTraining(struct BoxPokemon *boxMon, u8 selection)
 {
-    struct Pokemon *mon = SERVICE_MON;
-    u32 cost = ModLogic_HyperTrainCost(CountIVsToTrain(mon, gSpecialVar_0x8005), MOM_SERVICE_PRICE);
-
-    GetMonData(mon, MON_DATA_NICKNAME, gStringVar1);
-    StringGet_Nickname(gStringVar1);
-    ConvertIntToDecimalStringN(gStringVar2, cost, STR_CONV_MODE_LEFT_ALIGN, 5);
-    StringCopy(gStringVar3, sHyperTrainingLabels[gSpecialVar_0x8005]);
-    gSpecialVar_0x8006 = cost;
-    gSpecialVar_Result = cost;
-}
-
-// Raises the selected IV(s) to the maximum (31) and recalculates stats.
-void MomApplyHyperTraining(void)
-{
-    struct Pokemon *mon = SERVICE_MON;
     u32 maxIV = MAX_PER_STAT_IVS;
     u8 i;
 
-    if (gSpecialVar_0x8005 == MOM_HYPER_ALL)
+    if (selection == MOM_HYPER_ALL)
     {
-        for (i = MOM_HYPER_HP; i <= MOM_HYPER_SPEED; i++)
-            SetMonData(mon, sHyperTrainingMonData[i], &maxIV);
+        for (i = 0; i < NUM_STATS; i++)
+            SetBoxMonData(boxMon, sIVMonData[i], &maxIV);
     }
     else
     {
-        SetMonData(mon, sHyperTrainingMonData[gSpecialVar_0x8005], &maxIV);
+        SetBoxMonData(boxMon, sHyperTrainingMonData[selection], &maxIV);
     }
-    CalculateMonStats(mon);
+    RecalcStatsIfParty(boxMon);
 }
 
-// The ability slot (0 or 1) the Pokémon currently uses; falls back to slot 0 if its species has no ability in slot 1.
-static u8 GetCurrentAbilitySlot(struct Pokemon *mon, u16 species)
+// ---- Max EVs: every stat's EVs to 255 (the total EV cap is 6 x 255 too) ----
+
+void Mom_ApplyMaxEVs(struct BoxPokemon *boxMon)
 {
-    u8 slot = GetMonData(mon, MON_DATA_ABILITY_NUM) ? 1 : 0;
+    u8 maxEV = MAX_PER_STAT_EVS;
+    u8 i;
+
+    for (i = 0; i < NUM_STATS; i++)
+        SetBoxMonData(boxMon, sEVMonData[i], &maxEV);
+    RecalcStatsIfParty(boxMon);
+}
+
+// ---- Ability change: switch between the species' two abilities (like an Ability Capsule) ----
+
+// The ability slot (0 or 1) the Pokémon uses; falls back to slot 0 if its species has no ability in slot 1.
+static u8 GetCurrentAbilitySlot(struct BoxPokemon *boxMon)
+{
+    u16 species = GetBoxMonData(boxMon, MON_DATA_SPECIES);
+    u8 slot = GetBoxMonData(boxMon, MON_DATA_ABILITY_NUM) ? 1 : 0;
 
     if (gSpeciesInfo[species].abilities[slot] == ABILITY_NONE)
         slot = 0;
     return slot;
 }
 
-// Input: VAR_0x8004 = party slot. Output: VAR_RESULT = TRUE if the species has two different abilities to swap
-// between (like the Ability Capsule). Buffers the price (STR_VAR_1), current (STR_VAR_2) and new (STR_VAR_3)
-// ability names, and sets VAR_0x8006 to the price.
-void MomBufferAbilityChange(void)
+// The ability the Pokémon would switch to.
+u8 Mom_GetOtherAbility(struct BoxPokemon *boxMon)
 {
-    struct Pokemon *mon = SERVICE_MON;
-    u16 species = GetMonData(mon, MON_DATA_SPECIES);
-    u8 slot = GetCurrentAbilitySlot(mon, species);
-    u8 otherSlot = ModLogic_OtherAbilitySlot(slot);
+    u16 species = GetBoxMonData(boxMon, MON_DATA_SPECIES);
 
-    ConvertIntToDecimalStringN(gStringVar1, MOM_SERVICE_PRICE, STR_CONV_MODE_LEFT_ALIGN, 5);
-    StringCopy(gStringVar2, gAbilityNames[gSpeciesInfo[species].abilities[slot]]);
-    StringCopy(gStringVar3, gAbilityNames[gSpeciesInfo[species].abilities[otherSlot]]);
-    gSpecialVar_0x8006 = MOM_SERVICE_PRICE;
-    gSpecialVar_Result = ModLogic_CanSwapAbility(gSpeciesInfo[species].abilities[0], gSpeciesInfo[species].abilities[1]);
+    return gSpeciesInfo[species].abilities[ModLogic_OtherAbilitySlot(GetCurrentAbilitySlot(boxMon))];
 }
 
-// Switches the Pokémon to its other ability.
-void MomApplyAbilityChange(void)
+void Mom_ApplyAbilitySwap(struct BoxPokemon *boxMon)
 {
-    struct Pokemon *mon = SERVICE_MON;
-    u8 newSlot = ModLogic_OtherAbilitySlot(GetCurrentAbilitySlot(mon, GetMonData(mon, MON_DATA_SPECIES)));
+    u8 newSlot = ModLogic_OtherAbilitySlot(GetCurrentAbilitySlot(boxMon));
 
-    SetMonData(mon, MON_DATA_ABILITY_NUM, &newSlot);
+    SetBoxMonData(boxMon, MON_DATA_ABILITY_NUM, &newSlot);
 }
 
-// ---- Nature change (stats only, like a Mint) ----
+// ---- Nature change (stats only, like a Mint); the real nature is kept ----
 
 static const u8 sText_NatureUp[] = _(" +");
 static const u8 sText_NatureDown[] = _(" -");
@@ -175,8 +204,9 @@ static const u8 *const sNatureStatNames[NUM_NATURE_STATS] =
 
 static EWRAM_DATA u8 sNatureOptionText[NUM_NATURES][32] = {0};
 
-// "ADAMANT +ATK -SP.ATK" style label so the player can see what each nature does.
-static void BuildNatureOptionText(u8 nature)
+// "ADAMANT +ATK -SP.ATK" style label so the player can see what each nature does. The returned string stays
+// valid (it is kept in EWRAM), so it can be used as a list item.
+const u8 *Mom_GetNatureOptionText(u8 nature)
 {
     u8 *str = StringCopy(sNatureOptionText[nature], gNatureNamePointers[nature]);
     u8 stat, up = NUM_NATURE_STATS, down = NUM_NATURE_STATS;
@@ -192,22 +222,32 @@ static void BuildNatureOptionText(u8 nature)
     if (up == NUM_NATURE_STATS)
     {
         StringCopy(str, sText_NatureNeutral);
-        return;
     }
-    str = StringCopy(str, sText_NatureUp);
-    str = StringCopy(str, sNatureStatNames[up]);
-    str = StringCopy(str, sText_NatureDown);
-    StringCopy(str, sNatureStatNames[down]);
+    else
+    {
+        str = StringCopy(str, sText_NatureUp);
+        str = StringCopy(str, sNatureStatNames[up]);
+        str = StringCopy(str, sText_NatureDown);
+        StringCopy(str, sNatureStatNames[down]);
+    }
+    return sNatureOptionText[nature];
 }
 
-// Input: VAR_0x8004 = party slot. Output: STR_VAR_2 = the nature its stats currently follow, with its effect
-// (e.g. "ADAMANT +ATK -SP.ATK").
-void MomBufferCurrentNature(void)
+// The nature the Pokémon's stats follow (the override if there is one).
+u8 Mom_GetStatNature(struct BoxPokemon *boxMon)
 {
-    u8 nature = GetMonStatNature(SERVICE_MON);
+    return ModLogic_StatNature(GetBoxMonData(boxMon, MON_DATA_PERSONALITY), GetBoxMonData(boxMon, MON_DATA_NATURE_OVERRIDE), NUM_NATURES);
+}
 
-    BuildNatureOptionText(nature);
-    StringCopy(gStringVar2, sNatureOptionText[nature]);
+// Sets the stat nature. Choosing the Pokémon's real nature simply removes the override.
+void Mom_ApplyNature(struct BoxPokemon *boxMon, u8 nature)
+{
+    u8 stored = ModLogic_EncodeOverride(nature);
+
+    if (nature == GetNatureFromPersonality(GetBoxMonData(boxMon, MON_DATA_PERSONALITY)))
+        stored = MODLOGIC_NO_OVERRIDE;
+    SetBoxMonData(boxMon, MON_DATA_NATURE_OVERRIDE, &stored);
+    RecalcStatsIfParty(boxMon);
 }
 
 // ---- Hidden Power type change (bypasses the IV-derived type) ----
@@ -218,106 +258,44 @@ static const u8 sHiddenPowerTypes[MOM_NUM_HIDDEN_POWER_TYPES] =
     TYPE_FIRE, TYPE_WATER, TYPE_GRASS, TYPE_ELECTRIC, TYPE_PSYCHIC, TYPE_ICE, TYPE_DRAGON, TYPE_DARK,
 };
 
-const u8 *MomGetScrollOptionText(u8 scrollId, u8 index)
+u8 Mom_GetHiddenPowerListType(u8 index)
 {
-    if (scrollId == SCROLL_MULTI_MOM_NATURES)
-    {
-        BuildNatureOptionText(index);
-        return sNatureOptionText[index];
-    }
-    if (scrollId == SCROLL_MULTI_MOM_HP_TYPES)
-        return gTypeNames[sHiddenPowerTypes[index]];
-    return gText_EmptyString7;
+    return sHiddenPowerTypes[index];
 }
 
-// Inputs: VAR_0x8004 = party slot, VAR_0x8005 = chosen type (list index).
-// Outputs: VAR_RESULT = TRUE if the type would change; STR_VAR_1 = price, STR_VAR_2 = current Hidden Power type,
-//          STR_VAR_3 = chosen type; VAR_0x8006 = price.
-void MomBufferHiddenPowerChange(void)
+u8 Mom_GetHiddenPowerType(struct BoxPokemon *boxMon)
 {
-    struct Pokemon *mon = SERVICE_MON;
-    u8 current = GetMonHiddenPowerType(mon);
-    u8 chosen = sHiddenPowerTypes[gSpecialVar_0x8005];
+    u8 ivs[NUM_STATS];
 
-    ConvertIntToDecimalStringN(gStringVar1, MOM_SERVICE_PRICE, STR_CONV_MODE_LEFT_ALIGN, 5);
-    StringCopy(gStringVar2, gTypeNames[current]);
-    StringCopy(gStringVar3, gTypeNames[chosen]);
-    gSpecialVar_0x8006 = MOM_SERVICE_PRICE;
-    gSpecialVar_Result = chosen != current;
+    GetBoxMonIVs(boxMon, ivs);
+    return ModLogic_HiddenPowerType(ivs, GetBoxMonData(boxMon, MON_DATA_HP_TYPE_OVERRIDE), NUMBER_OF_MON_TYPES, TYPE_MYSTERY);
 }
 
-// Stores the chosen type (VAR_0x8005) as the Hidden Power type, independent of the IVs. Hyper Training or any
-// other IV change no longer affects it. Hidden Power's power still comes from the IVs.
-void MomApplyHiddenPowerChange(void)
+// Stores the type as the Hidden Power type, independent of the IVs (its power still comes from the IVs).
+void Mom_ApplyHiddenPower(struct BoxPokemon *boxMon, u8 type)
 {
-    struct Pokemon *mon = SERVICE_MON;
-    u8 stored = ModLogic_EncodeOverride(sHiddenPowerTypes[gSpecialVar_0x8005]);
+    u8 stored = ModLogic_EncodeOverride(type);
 
-    SetMonData(mon, MON_DATA_HP_TYPE_OVERRIDE, &stored);
+    SetBoxMonData(boxMon, MON_DATA_HP_TYPE_OVERRIDE, &stored);
 }
 
-// Inputs: VAR_0x8004 = party slot, VAR_0x8005 = chosen nature (list index).
-// Outputs: VAR_RESULT = TRUE if the nature would change; STR_VAR_1 = price, STR_VAR_2 = current stat nature,
-//          STR_VAR_3 = chosen nature; VAR_0x8006 = price.
-void MomBufferNatureChange(void)
-{
-    struct Pokemon *mon = SERVICE_MON;
-    u8 current = GetMonStatNature(mon);
+// ---- Move Relearner ----
 
-    ConvertIntToDecimalStringN(gStringVar1, MOM_SERVICE_PRICE, STR_CONV_MODE_LEFT_ALIGN, 5);
-    StringCopy(gStringVar2, gNatureNamePointers[current]);
-    StringCopy(gStringVar3, gNatureNamePointers[gSpecialVar_0x8005]);
-    gSpecialVar_0x8006 = MOM_SERVICE_PRICE;
-    gSpecialVar_Result = gSpecialVar_0x8005 != current;
+// Number of level-up and Egg moves the Pokémon could relearn.
+u8 Mom_CountMovesToRelearn(struct BoxPokemon *boxMon)
+{
+    struct Pokemon mon;
+    bool8 includeEggMoves = gRelearnerIncludesEggMoves;
+    u8 count;
+
+    BoxMonToMon(boxMon, &mon);
+    gRelearnerIncludesEggMoves = TRUE;
+    count = GetNumberOfRelearnableMoves(&mon);
+    gRelearnerIncludesEggMoves = includeEggMoves;
+    return count;
 }
 
-// Sets the stat nature to the chosen one (VAR_0x8005). The Pokémon's real nature is untouched; choosing its
-// real nature simply removes the override.
-void MomApplyNatureChange(void)
-{
-    struct Pokemon *mon = SERVICE_MON;
-    u8 stored = ModLogic_EncodeOverride(gSpecialVar_0x8005);
-
-    if (gSpecialVar_0x8005 == GetNature(mon))
-        stored = MODLOGIC_NO_OVERRIDE;
-    SetMonData(mon, MON_DATA_NATURE_OVERRIDE, &stored);
-    CalculateMonStats(mon);
-}
-
-// ---- Max EVs: every stat's EVs to 255 (the total EV cap is 6 x 255 too) ----
-
-static const u8 sEVMonData[NUM_STATS] =
-{
-    MON_DATA_HP_EV, MON_DATA_ATK_EV, MON_DATA_DEF_EV, MON_DATA_SPEED_EV, MON_DATA_SPATK_EV, MON_DATA_SPDEF_EV,
-};
-
-// Input: VAR_0x8004 = party slot. Output: VAR_RESULT = TRUE if any of the Pokémon's EVs is below the maximum.
-void MomBufferMaxEVs(void)
-{
-    struct Pokemon *mon = SERVICE_MON;
-    u8 i;
-
-    gSpecialVar_Result = FALSE;
-    for (i = 0; i < NUM_STATS; i++)
-    {
-        if (GetMonData(mon, sEVMonData[i]) < MAX_PER_STAT_EVS)
-            gSpecialVar_Result = TRUE;
-    }
-}
-
-// Sets all six EVs to MAX_PER_STAT_EVS and recalculates stats.
-void MomApplyMaxEVs(void)
-{
-    struct Pokemon *mon = SERVICE_MON;
-    u8 maxEV = MAX_PER_STAT_EVS;
-    u8 i;
-
-    for (i = 0; i < NUM_STATS; i++)
-        SetMonData(mon, sEVMonData[i], &maxEV);
-    CalculateMonStats(mon);
-}
-
-// Mom's Move Relearner offers Egg moves as well as level-up moves; the menu turns this off again.
+// Mom's Move Relearner offers Egg moves as well as level-up moves; her menu turns this off again.
 void MomEnableEggMovesRelearner(void)
 {
     gRelearnerIncludesEggMoves = TRUE;
@@ -326,22 +304,6 @@ void MomEnableEggMovesRelearner(void)
 void MomDisableEggMovesRelearner(void)
 {
     gRelearnerIncludesEggMoves = FALSE;
-}
-
-// Charges VAR_0x8006 money. VAR_RESULT = TRUE if the player could pay (and was charged).
-void MomPayForService(void)
-{
-    u32 cost = gSpecialVar_0x8006;
-
-    if (IsEnoughMoney(&gSaveBlock1Ptr->money, cost))
-    {
-        RemoveMoney(&gSaveBlock1Ptr->money, cost);
-        gSpecialVar_Result = TRUE;
-    }
-    else
-    {
-        gSpecialVar_Result = FALSE;
-    }
 }
 
 // ---- Greetings and goodbyes, by story stage (see ModLogic_MomDialogueStage) ----

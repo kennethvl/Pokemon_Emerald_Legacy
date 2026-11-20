@@ -177,6 +177,18 @@ static EWRAM_DATA struct
     u16 scrollOffset;                                    /*0x116*/
 } *sMoveRelearnerStruct = {0};
 
+// Set by ShowMoveRelearnerForMon: the Pokémon to teach (NULL = gPlayerParty[VAR_0x8004]) and where to go
+// when the relearner closes (NULL = back to the field script).
+static EWRAM_DATA struct Pokemon *sRelearnerTargetMon = NULL;
+static EWRAM_DATA MainCallback sRelearnerExitCallback = NULL;
+
+static struct Pokemon *GetRelearnerMon(void)
+{
+    if (sRelearnerTargetMon != NULL)
+        return sRelearnerTargetMon;
+    return &gPlayerParty[sMoveRelearnerStruct->partyMon];
+}
+
 static EWRAM_DATA struct {
     u16 listOffset;
     u16 listRow;
@@ -380,6 +392,16 @@ void TeachMoveRelearnerMove(void)
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
 }
 
+// Opens the relearner for `mon` (any Pokémon, e.g. a copy of a boxed one) and calls exitCallback when it
+// closes. The screen must already be faded to black. The caller is responsible for writing `mon` back.
+void ShowMoveRelearnerForMon(struct Pokemon *mon, MainCallback exitCallback)
+{
+    sRelearnerTargetMon = mon;
+    sRelearnerExitCallback = exitCallback;
+    gSpecialVar_0x8004 = 0; // party slot is unused when a target Pokémon is given
+    SetMainCallback2(CB2_InitLearnMove);
+}
+
 static void Task_WaitForFadeOut(u8 taskId)
 {
     if (!gPaletteFade.active)
@@ -522,7 +544,7 @@ static void DoMoveRelearnerMain(void)
 
             if (selection == 0)
             {
-                if (GiveMoveToMon(&gPlayerParty[sMoveRelearnerStruct->partyMon], GetCurrentSelectedMove()) != MON_HAS_MAX_MOVES)
+                if (GiveMoveToMon(GetRelearnerMon(), GetCurrentSelectedMove()) != MON_HAS_MAX_MOVES)
                 {
                     PrintMessageWithPlaceholders(gText_MoveRelearnerPkmnLearnedMove);
                     gSpecialVar_0x8004 = TRUE;
@@ -660,7 +682,10 @@ static void DoMoveRelearnerMain(void)
     case MENU_STATE_SHOW_MOVE_SUMMARY_SCREEN:
         if (!gPaletteFade.active)
         {
-            ShowSelectMovePokemonSummaryScreen(gPlayerParty, sMoveRelearnerStruct->partyMon, gPlayerPartyCount - 1, CB2_InitLearnMoveReturnFromSelectMove, GetCurrentSelectedMove());
+            if (sRelearnerTargetMon != NULL)
+                ShowSelectMovePokemonSummaryScreen(sRelearnerTargetMon, 0, 0, CB2_InitLearnMoveReturnFromSelectMove, GetCurrentSelectedMove());
+            else
+                ShowSelectMovePokemonSummaryScreen(gPlayerParty, sMoveRelearnerStruct->partyMon, gPlayerPartyCount - 1, CB2_InitLearnMoveReturnFromSelectMove, GetCurrentSelectedMove());
             FreeMoveRelearnerResources();
         }
         break;
@@ -680,8 +705,15 @@ static void DoMoveRelearnerMain(void)
     case MENU_STATE_RETURN_TO_FIELD:
         if (!gPaletteFade.active)
         {
+            MainCallback exitCallback = sRelearnerExitCallback;
+
             FreeMoveRelearnerResources();
-            SetMainCallback2(CB2_ReturnToField);
+            sRelearnerTargetMon = NULL;
+            sRelearnerExitCallback = NULL;
+            if (exitCallback != NULL)
+                SetMainCallback2(exitCallback);
+            else
+                SetMainCallback2(CB2_ReturnToField);
         }
         break;
     case MENU_STATE_FADE_FROM_SUMMARY_SCREEN:
@@ -707,11 +739,11 @@ static void DoMoveRelearnerMain(void)
             }
             else
             {
-                u16 moveId = GetMonData(&gPlayerParty[sMoveRelearnerStruct->partyMon], MON_DATA_MOVE1 + sMoveRelearnerStruct->moveSlot);
+                u16 moveId = GetMonData(GetRelearnerMon(), MON_DATA_MOVE1 + sMoveRelearnerStruct->moveSlot);
 
                 StringCopy(gStringVar3, gMoveNames[moveId]);
-                RemoveMonPPBonus(&gPlayerParty[sMoveRelearnerStruct->partyMon], sMoveRelearnerStruct->moveSlot);
-                SetMonMoveSlot(&gPlayerParty[sMoveRelearnerStruct->partyMon], GetCurrentSelectedMove(), sMoveRelearnerStruct->moveSlot);
+                RemoveMonPPBonus(GetRelearnerMon(), sMoveRelearnerStruct->moveSlot);
+                SetMonMoveSlot(GetRelearnerMon(), GetCurrentSelectedMove(), sMoveRelearnerStruct->moveSlot);
                 StringCopy(gStringVar2, gMoveNames[GetCurrentSelectedMove()]);
                 PrintMessageWithPlaceholders(gText_MoveRelearnerAndPoof);
                 sMoveRelearnerStruct->state = MENU_STATE_DOUBLE_FANFARE_FORGOT_MOVE;
@@ -903,11 +935,11 @@ static void CreateLearnableMovesList(void)
     u8 nickname[POKEMON_NAME_LENGTH + 1];
 
     if (gRelearnerIncludesEggMoves)
-        sMoveRelearnerStruct->numMenuChoices = GetRelearnerMovesWithEggMoves(&gPlayerParty[sMoveRelearnerStruct->partyMon], sMoveRelearnerStruct->movesToLearn);
+        sMoveRelearnerStruct->numMenuChoices = GetRelearnerMovesWithEggMoves(GetRelearnerMon(), sMoveRelearnerStruct->movesToLearn);
     else if (FlagGet(FLAG_EGG_MOVES_TUTOR))
-        sMoveRelearnerStruct->numMenuChoices = GetEggMoves(&gPlayerParty[sMoveRelearnerStruct->partyMon], sMoveRelearnerStruct->movesToLearn);
+        sMoveRelearnerStruct->numMenuChoices = GetEggMoves(GetRelearnerMon(), sMoveRelearnerStruct->movesToLearn);
     else
-        sMoveRelearnerStruct->numMenuChoices = GetMoveRelearnerMoves(&gPlayerParty[sMoveRelearnerStruct->partyMon], sMoveRelearnerStruct->movesToLearn);
+        sMoveRelearnerStruct->numMenuChoices = GetMoveRelearnerMoves(GetRelearnerMon(), sMoveRelearnerStruct->movesToLearn);
 
     for (i = 0; i < sMoveRelearnerStruct->numMenuChoices; i++)
     {
@@ -915,7 +947,7 @@ static void CreateLearnableMovesList(void)
         sMoveRelearnerStruct->menuItems[i].id = sMoveRelearnerStruct->movesToLearn[i];
     }
 
-    GetMonData(&gPlayerParty[sMoveRelearnerStruct->partyMon], MON_DATA_NICKNAME, nickname);
+    GetMonData(GetRelearnerMon(), MON_DATA_NICKNAME, nickname);
     StringCopy_Nickname(gStringVar1, nickname);
     sMoveRelearnerStruct->menuItems[sMoveRelearnerStruct->numMenuChoices].name = gText_Cancel;
     sMoveRelearnerStruct->menuItems[sMoveRelearnerStruct->numMenuChoices].id = LIST_CANCEL;
