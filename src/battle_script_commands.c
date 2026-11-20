@@ -9980,6 +9980,9 @@ static void Cmd_handleballthrow(void)
             BtlController_EmitBallThrowAnim(BUFFER_A, BALL_3_SHAKES_SUCCESS);
             MarkBattlerForControllerExec(gActiveBattler);
             gBattlescriptCurrInstr = BattleScript_SuccessBallThrow;
+            // The caught mon stays in the ball if the battle screen is rebuilt
+            // (e.g. after the summary screen when a party mon learns a move).
+            gBattleSpritesDataPtr->battlerData[gBattlerTarget].invisible = TRUE;
             SetMonData(&gEnemyParty[gBattlerPartyIndexes[gBattlerTarget]], MON_DATA_POKEBALL, &gLastUsedItem);
 
             if (CalculatePlayerPartyCount() == PARTY_SIZE)
@@ -10005,6 +10008,9 @@ static void Cmd_handleballthrow(void)
             if (shakes == BALL_3_SHAKES_SUCCESS) // mon caught, copy of the code above
             {
                 gBattlescriptCurrInstr = BattleScript_SuccessBallThrow;
+                // The caught mon stays in the ball if the battle screen is rebuilt
+                // (e.g. after the summary screen when a party mon learns a move).
+                gBattleSpritesDataPtr->battlerData[gBattlerTarget].invisible = TRUE;
                 SetMonData(&gEnemyParty[gBattlerPartyIndexes[gBattlerTarget]], MON_DATA_POKEBALL, &gLastUsedItem);
 
                 if (CalculatePlayerPartyCount() == PARTY_SIZE)
@@ -10122,6 +10128,17 @@ static void Cmd_displaydexinfo(void)
     case 1:
         if (!gPaletteFade.active)
         {
+            // The dex page keeps the battle VBlank callback, which writes these
+            // to the BG scroll registers. A level-up banner from the EXP given
+            // on catch leaves BG2 scrolled, which would shift the dex text.
+            gBattle_BG0_X = 0;
+            gBattle_BG0_Y = 0;
+            gBattle_BG1_X = 0;
+            gBattle_BG1_Y = 0;
+            gBattle_BG2_X = 0;
+            gBattle_BG2_Y = 0;
+            gBattle_BG3_X = 0;
+            gBattle_BG3_Y = 0;
             FreeAllWindowBuffers();
             #ifndef BATTLE_ENGINE
             gBattleCommunication[TASK_ID] = DisplayCaughtMonDexPage(SpeciesToNationalPokedexNum(species),
