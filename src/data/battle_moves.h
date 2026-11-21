@@ -198,7 +198,7 @@ const struct BattleMove gBattleMoves[MOVES_COUNT] =
     [MOVE_CUT] =
     {
         .effect = EFFECT_HIGH_CRITICAL,
-        .power = 75,
+        .power = 90,
         .type = TYPE_BUG,
         .accuracy = 100,
         .pp = 30,
@@ -250,7 +250,7 @@ const struct BattleMove gBattleMoves[MOVES_COUNT] =
     [MOVE_FLY] =
     {
         .effect = EFFECT_SEMI_INVULNERABLE,
-        .power = 100,
+        .power = 120,
         .type = TYPE_FLYING,
         .accuracy = 100,
         .pp = 15,
@@ -848,7 +848,7 @@ const struct BattleMove gBattleMoves[MOVES_COUNT] =
     [MOVE_DRILL_PECK] =
     {
         .effect = EFFECT_HIT,
-        .power = 80,
+        .power = 90,
         .type = TYPE_FLYING,
         .accuracy = 100,
         .pp = 20,
@@ -1927,7 +1927,7 @@ const struct BattleMove gBattleMoves[MOVES_COUNT] =
     [MOVE_FLASH] =
     {
         .effect = EFFECT_ACCURACY_DOWN_HIT, // Electric damage that always lowers the target's accuracy by one stage
-        .power = 75,
+        .power = 100,
         .type = TYPE_ELECTRIC,
         .accuracy = 100,
         .pp = 20,
@@ -3149,7 +3149,7 @@ const struct BattleMove gBattleMoves[MOVES_COUNT] =
     [MOVE_CRUNCH] =
     {
         .effect = EFFECT_DEFENSE_DOWN_HIT,
-        .power = 80,
+        .power = 90,
         .type = TYPE_DARK,
         .accuracy = 100,
         .pp = 15,
@@ -3773,7 +3773,7 @@ const struct BattleMove gBattleMoves[MOVES_COUNT] =
     [MOVE_SECRET_POWER] =
     {
         .effect = EFFECT_SECRET_POWER,
-        .power = 100,
+        .power = 120,
         .type = TYPE_NORMAL,
         .accuracy = 100,
         .pp = 20,
@@ -3890,7 +3890,7 @@ const struct BattleMove gBattleMoves[MOVES_COUNT] =
     [MOVE_BLAZE_KICK] =
     {
         .effect = EFFECT_BLAZE_KICK,
-        .power = 80,
+        .power = 100,
         .type = TYPE_FIRE,
         .accuracy = 100,
         .pp = 15,
@@ -4293,7 +4293,7 @@ const struct BattleMove gBattleMoves[MOVES_COUNT] =
     [MOVE_MUDDY_WATER] =
     {
         .effect = EFFECT_SPEED_DOWN_HIT,
-        .power = 90,
+        .power = 100,
         .type = TYPE_WATER,
         .accuracy = 100,
         .pp = 15,
@@ -4319,7 +4319,7 @@ const struct BattleMove gBattleMoves[MOVES_COUNT] =
     [MOVE_AERIAL_ACE] =
     {
         .effect = EFFECT_ALWAYS_HIT,
-        .power = 75,
+        .power = 90,
         .type = TYPE_FLYING,
         .accuracy = 0,
         .pp = 20,
@@ -4527,7 +4527,7 @@ const struct BattleMove gBattleMoves[MOVES_COUNT] =
     [MOVE_LEAF_BLADE] =
     {
         .effect = EFFECT_LEAF_BLADE,
-        .power = 80,
+        .power = 100,
         .type = TYPE_GRASS,
         .accuracy = 100,
         .pp = 15,
